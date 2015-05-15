@@ -4,3 +4,12 @@
 *.ptx
 *.cubin
 *.fatbin
+
+#OSX files
+
+#data file
+*.tsv
+*.csv
+
+#C compiled files
+*.o
