@@ -9,7 +9,7 @@ conv_1d.o: conv_1d.c
 test_cpu: conv_1d.o
 	./conv_1d.o 10 10 3 7 5
 	
-conv_1d_gpu.o: conv_1d_gpu.cu
+conv_1d_gpu.o: 
 	git pull
 	nvcc -o conv_1d_gpu.o conv_1d_gpu.cu
 	

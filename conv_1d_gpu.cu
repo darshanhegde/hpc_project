@@ -271,9 +271,7 @@ int main(int argc, char* argv[]){
     }
 
     // GPU loop
-    for (int batch=0; batch < n_batches; batch++) {
-        
-    }
+    
     
     
     //Free all GPU allocated resources.
