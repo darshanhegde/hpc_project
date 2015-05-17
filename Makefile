@@ -8,8 +8,14 @@ conv_1d.o: conv_1d.c
 test_cpu: conv_1d.o
 	./conv_1d.o 10 10 3 7 5
 	
-sync: Makefile conv_1d_gpu.c
-	git add Makefile conv_1d_gpu.c
+conv_1d_gpu.o: conv_1d_gpu.cu
+	nvcc -o conv_1d_gpu.o conv_1d_gpu.cu
+	
+test_gpu: conv_1d_gpu.o
+	./ conv_1d_gpu.o 10 10 3 7 5
+	
+sync: Makefile conv_1d_gpu.cu
+	git add Makefile conv_1d_gpu.cu
 	git commit -m "Syncing with master"
 	git push
 	
