@@ -246,24 +246,19 @@ int main(int argc, char* argv[]){
     //Select the device you want to run the code.
     cudaSetDevice(device_id);
     
-    // Allocate GPU WORDVEC, KERNS and OUTPUT
-    WORDVECS* d_wordvec;
-    cudaMalloc((void **) &d_wordvec, sizeof(WORDVECS));
-    KERNS* d_kerns;
-    cudaMalloc((void **) &d_kerns, sizeof(KERNS));
-    OUTPUTS* d_output;
-    cudaMalloc((void **) &d_output, sizeof(OUTPUTS));
-    printf("Done allocating WORDVEC, KERNS and OUTPUT. \n");
-
-    // Initialize device kerns
-    cudaMemcpy(d_kerns, &kerns, sizeof(KERNS), cudaMemcpyHostToDevice);
-    printf("Done initilizing structure. \n");
+    // Allocate GPU WORDVEC, KERNS and OUTPUT. Planning to pass these structs by value.
+    WORDVECS d_wordvec;
+    KERNS d_kerns;
+    OUTPUTS d_output;
     
     // Allocate and Initialize kerns.k on device
-    cudaMalloc((void **) &(d_kerns->k), sizeof(float)*kerns.num*kerns.width*kerns.height);
-    printf("Done allocating d_kerns->k \n");
-//    cudaMemcpy(d_kerns->k, kerns.k, sizeof(float)*kerns.num*kerns.width*kerns.height, cudaMemcpyHostToDevice);
-//    
+    float* d_k;
+    cudaMalloc((void **) &(d_k), sizeof(float)*kerns.num*kerns.width*kerns.height);
+    printf("Done allocating d_k \n");
+    
+    cudaMemcpy(d_k, &kerns.k, sizeof(float)*kerns.num*kerns.width*kerns.height, cudaMemcpyHostToDevice);
+    printf("Done transfering kerns.k \n");
+    
 //    // Readback and check if the results are right
 //    cudaMemcpy(kerns.k, d_kerns->k, sizeof(float)*kerns.num*kerns.width*kerns.height, cudaMemcpyDeviceToHost);
 //    printf("GPU kernel values. \n");
@@ -280,10 +275,7 @@ int main(int argc, char* argv[]){
 //    
 //    
 //    //Free all GPU allocated resources.
-//    cudaFree(d_kerns->k);
-    cudaFree(d_wordvec);
-    cudaFree(d_kerns);
-    cudaFree(d_output);
+    cudaFree(d_k);
     
     //Free all host allocated resources
     for (int batch=0; batch < n_batches; batch++) {
