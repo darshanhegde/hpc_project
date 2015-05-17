@@ -254,11 +254,11 @@ int main(int argc, char* argv[]){
     cudaMemcpy(d_kerns, &kerns, sizeof(KERNS), cudaMemcpyHostToDevice);
     
     // Allocate and Initialize kerns.k on device
-    cudaMalloc((void **) &(d_kerns.k), sizeof(float)*kerns.num*kerns.width*kerns.height);
-    cudaMemcpy(d_kerns.k, kerns.k, sizeof(float)*kerns.num*kerns.width*kerns.height, cudaMemcpyHostToDevice);
+    cudaMalloc((void **) &(d_kerns->k), sizeof(float)*kerns.num*kerns.width*kerns.height);
+    cudaMemcpy(d_kerns->k, kerns.k, sizeof(float)*kerns.num*kerns.width*kerns.height, cudaMemcpyHostToDevice);
     
     // Readback and check if the results are right
-    cudaMemcpy(kerns.k, d_kerns.k, sizeof(float)*kerns.num*kerns.width*kerns.height, cudaMemcpyDeviceToHost);
+    cudaMemcpy(kerns.k, d_kerns->k, sizeof(float)*kerns.num*kerns.width*kerns.height, cudaMemcpyDeviceToHost);
     printf("GPU kernel values. \n");
     for (int i=0; i<kerns.num; i++) {
         printf("Kernel: %d\n", i);
@@ -273,7 +273,7 @@ int main(int argc, char* argv[]){
     
     
     //Free all GPU allocated resources.
-    cudaFree(d_kerns.k);
+    cudaFree(d_kerns->k);
     cudaFree(d_wordvec);
     cudaFree(d_kerns);
     cudaFree(d_output);
