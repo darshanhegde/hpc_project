@@ -244,7 +244,11 @@ int main(int argc, char* argv[]){
     }
     
     //Select the device you want to run the code.
-    //    cudaSetDevice(device_id);
+    cudaSetDevice(device_id);
+    
+    float* dummy;
+    cudaMalloc((void **) &dummy, sizeof(float));
+    printf("Done allocating float.");
     
     // Allocate GPU WORDVEC, KERNS and OUTPUT
     WORDVECS* d_wordvec;
