@@ -259,8 +259,9 @@ int main(int argc, char* argv[]){
     cudaMemcpy(d_kerns, &kerns, sizeof(KERNS), cudaMemcpyHostToDevice);
     printf("Done initilizing structure. \n");
     
-//    // Allocate and Initialize kerns.k on device
-//    cudaMalloc((void **) &(d_kerns->k), sizeof(float)*kerns.num*kerns.width*kerns.height);
+    // Allocate and Initialize kerns.k on device
+    cudaMalloc((void **) &(d_kerns->k), sizeof(float)*kerns.num*kerns.width*kerns.height);
+    printf("Done allocating d_kerns->k \n");
 //    cudaMemcpy(d_kerns->k, kerns.k, sizeof(float)*kerns.num*kerns.width*kerns.height, cudaMemcpyHostToDevice);
 //    
 //    // Readback and check if the results are right
