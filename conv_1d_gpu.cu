@@ -257,24 +257,26 @@ int main(int argc, char* argv[]){
     printf("Done allocating d_k \n");
     
     cudaMemcpy(d_k, &kerns.k, sizeof(float)*kerns.num*kerns.width*kerns.height, cudaMemcpyHostToDevice);
-    printf("Done transfering kerns.k \n");
+    printf("Done transfering kerns.k -> d_k \n");
+    d_kerns.k = d_k;
     
-//    // Readback and check if the results are right
-//    cudaMemcpy(kerns.k, d_kerns->k, sizeof(float)*kerns.num*kerns.width*kerns.height, cudaMemcpyDeviceToHost);
-//    printf("GPU kernel values. \n");
-//    for (int i=0; i<kerns.num; i++) {
-//        printf("Kernel: %d\n", i);
-//        print_mat(&kerns.k[i*kerns.height*kerns.width], kerns.width, kerns.height);
-//        printf("\n\n");
-//    }
-//    
-//    // GPU loop
-//    for (int batch=0; batch < n_batches; batch++) {
-//        
-//    }
-//    
-//    
-//    //Free all GPU allocated resources.
+    // Readback and check if the results are right
+    cudaMemcpy(kerns.k, d_k, sizeof(float)*kerns.num*kerns.width*kerns.height, cudaMemcpyDeviceToHost);
+    
+    printf("GPU kernel values. \n");
+    for (int i=0; i<kerns.num; i++) {
+        printf("Kernel: %d\n", i);
+        print_mat(&kerns.k[i*kerns.height*kerns.width], kerns.width, kerns.height);
+        printf("\n\n");
+    }
+
+    // GPU loop
+    for (int batch=0; batch < n_batches; batch++) {
+        
+    }
+    
+    
+    //Free all GPU allocated resources.
     cudaFree(d_k);
     
     //Free all host allocated resources
