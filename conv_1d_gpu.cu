@@ -253,6 +253,7 @@ int main(int argc, char* argv[]){
     cudaMalloc((void **) &d_kerns, sizeof(KERNS));
     OUTPUTS* d_output;
     cudaMalloc((void **) &d_output, sizeof(OUTPUTS));
+    printf("Done allocating WORDVEC, KERNS and OUTPUT.");
     
     // Initialize device kerns
     cudaMemcpy(d_kerns, &kerns, sizeof(KERNS), cudaMemcpyHostToDevice);
