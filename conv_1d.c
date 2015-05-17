@@ -12,7 +12,7 @@
 typedef struct WORDVECS{
     float* w;
     int dim;
-    int* lens;
+    long* lens;
     int n_sents;
     int n_batches;
     int batch_size;
@@ -26,11 +26,11 @@ typedef struct KERNS{
 }KERNS;
 
 
-void read_sentence_lens(char* file_path, int* sent_lens, int n_sents){
+void read_sentence_lens(char* file_path, long* sent_lens, int n_sents){
     /*
      Reads sentence lengths from Trip Advisor Dataset.
      */
-    int len=0;
+    long len=0;
     FILE *fp = fopen(file_path, "r");
     if (fp == NULL) {
         fprintf(stderr, "Can't open input file %s!\n", file_path);
@@ -40,16 +40,19 @@ void read_sentence_lens(char* file_path, int* sent_lens, int n_sents){
     sent_lens[0] = len;
     for(int i=1; (i < n_sents) && (fret != EOF); i++) {
         fret = fscanf(fp, "%d\n", &len);
+        if (len == 0) {
+            printf("Zero length sentence encountered. \n");
+        }
         sent_lens[i] = sent_lens[i-1] + len;
     }
     fclose(fp);
 }
 
-void init_wordvecs(float* wordvecs, int dim, int n_sents){
+void init_wordvecs(float* wordvecs, int dim, int total_words){
     /*
      Initilizes word vectors. i.e input for convolution
      */
-    for (int i=0; i < (dim*n_sents); i++) {
+    for (int i=0; i < (dim*total_words); i++) {
         wordvecs[i] = 1.;
     }
 }
@@ -63,12 +66,13 @@ void init_kerns(float* kerns, int n_kerns, int kern_w, int kern_h){
     }
 }
 
-void init_output_idxs(int* output_idxs, int* sent_lens, int n_sents, int kern_w){
-    output_idxs[0] = (sent_lens[0] + kern_w - 1);
-    for (int i=1; i< n_sents; i++) {
-        output_idxs[i] += (output_idxs[i-1] + (sent_lens[i] - sent_lens[i-1] + kern_w - 1));
+void init_out_idxs(long* out_idxs, long* lens, int n_sents, int kern_w){
+    out_idxs[0] = (lens[0] + kern_w - 1);
+    for (int i=1; i < n_sents; i++) {
+        out_idxs[i] = out_idxs[i-1] + (lens[i] - lens[i-1]) + kern_w - 1;
     }
 }
+
 
 void print_mat(float* mat, int width,int height){
     /*
@@ -93,50 +97,57 @@ void print_mat(float* mat, int width,int height){
     printf("])\n");
 }
 
-void conv1d_kernel(WORDVECS wordvecs, KERNS kerns, float* outputs, int* output_idxs, int mini_batch){
+void conv1d_kernel(WORDVECS wordvecs, KERNS kerns, float* outputs, long* out_idxs, int mini_batch, int test_idx){
     /*
      Performs 1d convolution on CPU for each mini-batch at a time.
      */
-    int* out_idxs = &output_idxs[mini_batch*wordvecs.batch_size];
-    int* lens = &wordvecs.lens[mini_batch*wordvecs.batch_size];
     float* wv;
     float* outs;
-    
-    int len, out_len, kern_idx, kern_base, real_inst;
-    for (int inst=0; inst < wordvecs.batch_size; inst++) {
-        real_inst = mini_batch*wordvecs.batch_size + inst;
-        if (real_inst == 0) {
-            len = lens[inst];
-            out_len = out_idxs[inst];
+    long len, out_len;
+    int full_idx;
+    // Loop over instances in a mini-batch
+    for (int idx=0; idx < wordvecs.batch_size; idx++) {
+        full_idx = mini_batch*wordvecs.batch_size + idx;
+        wv = &wordvecs.w[wordvecs.dim * wordvecs.lens[full_idx]];
+        outs = &outputs[kerns.num * out_idxs[full_idx]];
+        if (mini_batch == 0 && idx == 0) {
+            len = wordvecs.lens[0];
+            out_len = out_idxs[0];
         } else {
-            len = lens[inst] - lens[inst-1];
-            out_len = out_idxs[inst] - out_idxs[inst-1];
+            len = wordvecs.lens[full_idx] - wordvecs.lens[full_idx-1];
+            out_len = out_idxs[full_idx] - out_idxs[full_idx-1];
         }
-        wv = &wordvecs.w[wordvecs.dim*wordvecs.lens[real_inst]];
-        outs = &outputs[kerns.num*output_idxs[real_inst]];
-        float* sum = calloc(out_len*kerns.num, sizeof(float));
+        // Debugging code
+        if (test_idx == full_idx) {
+            printf("testing for instance %d, len: %d, out_len: %d \n", test_idx, len, out_len);
+        }
+        
+        int k_sub;
+        float dot_sum;
+        // Loop over output positions
         for (int i=0; i < out_len; i++) {
-            for (int j = MAX(0, i-kerns.width+1); j <= MIN(i, len-1); j++) {
-                for (int k=0; k < kerns.num; k++) {
-                    int k_sub=(kerns.width-1-i+j);
-                    if (real_inst == 7) {
-                        printf("out_idx=%d, out_len: %d, len:%d, i=%d, j=%d, k_sub=%d, k=%d\n", kerns.num*out_idxs[inst], out_len, len, i, j, k_sub, k);
+            // Loop over kernels
+            for (int k=0; k < kerns.num; k++) {
+                // Loop over valid kernel widths
+                dot_sum = 0.;
+                for (int j=MAX(0, i-kerns.width+1); j <= MIN(i, len-1); j++) {
+                    k_sub = (kerns.width-1-i+j);
+                    if (test_idx == full_idx) {
+                        printf("i=%d, k=%d, j=%d k_sub=%d\n", i, k, j, k_sub);
                     }
-                    float d_sum = 0.;
-                    for (int d=0; d<wordvecs.dim; d++) {
-                        d_sum += (wv[i*wordvecs.dim+d] * kerns.k[k*kerns.width*kerns.height + k_sub*kerns.height + d]);
+                    for (int d=0; d < wordvecs.dim; d++) {
+                        dot_sum += (wv[j*wordvecs.dim+d] * kerns.k[k*kerns.width*kerns.height + k_sub*wordvecs.dim + d]);
                     }
-                    sum[i*kerns.num+k] += d_sum;
-                    outs[i*kerns.num+k] += d_sum;
+                }
+                outs[i*kerns.num+k] = dot_sum;
+                if (test_idx == full_idx) {
+                    printf("outs[i=%d, k=%d]=%f\n", i, k, dot_sum);
                 }
             }
         }
-        if (real_inst == 7) {
-            print_mat(sum, out_len, kerns.num);
-            print_mat(outs, out_len, kerns.num);
-        }
     }
 }
+
 
 int main(int argc, char* argv[]){
     if (argc != 6) {
@@ -163,13 +174,13 @@ int main(int argc, char* argv[]){
     wordvecs.n_sents = wordvecs.n_batches*wordvecs.batch_size;
     
     //Allocate sentence lengths and read
-    wordvecs.lens = (int *) calloc(wordvecs.n_sents, sizeof(int));
+    wordvecs.lens = (long *) calloc(wordvecs.n_sents, sizeof(long));
     read_sentence_lens("sentence_lens.txt", wordvecs.lens, wordvecs.n_sents);
     
     int total_words = wordvecs.lens[wordvecs.n_sents-1];
     //Allocate wordvec and initilize
     wordvecs.w = calloc(total_words*wordvecs.dim, sizeof(float));
-    init_wordvecs(wordvecs.w, wordvecs.dim, wordvecs.n_sents);
+    init_wordvecs(wordvecs.w, wordvecs.dim, total_words);
     
     //Allocate kernels and initilize
     kerns.k = calloc(kerns.height*kerns.width*kerns.num, sizeof(float));
@@ -181,19 +192,33 @@ int main(int argc, char* argv[]){
         printf("\n\n");
     }
     
-    //Allocate outputs and corresponding idx and initilize them
-    float *outputs = calloc((total_words+(kerns.width-1)*wordvecs.n_sents)*kerns.num, sizeof(float));
-    int* output_idxs = (int *) calloc(wordvecs.n_sents, sizeof(int));
-    init_output_idxs(output_idxs, wordvecs.lens, wordvecs.n_sents, kerns.width);
+    printf("Total words:%d \n", total_words);
     
-    // Perform convolution on each mini-batch
-    for (int i=0; i<wordvecs.n_batches; i++) {
-        conv1d_kernel(wordvecs, kerns, outputs, output_idxs, i);
+    long* out_idxs = (long*) calloc(wordvecs.n_sents, sizeof(long));
+    init_out_idxs(out_idxs, wordvecs.lens, wordvecs.n_sents, kerns.width);
+    
+//    printf("i=%d, lens=%d, out_idxs=%d \n", 0, wordvecs.lens[0], out_idxs[0]);
+//    for (int i=1; i < 50; i++) {
+//        printf("i=%d, lens=%d, out_idxs=%d \n", i, wordvecs.lens[i]-wordvecs.lens[i-1], out_idxs[i] - out_idxs[i-1]);
+//    }
+//    printf("i=%d, lens=%d, out_idxs=%d \n", wordvecs.n_sents-1, wordvecs.lens[wordvecs.n_sents-1]-wordvecs.lens[wordvecs.n_sents-2], out_idxs[wordvecs.n_sents-1] - out_idxs[wordvecs.n_sents-2]);
+    
+    float* outputs = (float *) calloc(out_idxs[wordvecs.n_sents-1]*kerns.num, sizeof(float));
+    
+    int test_idx = 4993;
+    for (int i=0; i < wordvecs.n_batches; i++) {
+        conv1d_kernel(wordvecs, kerns, outputs, out_idxs, i, test_idx);
     }
     
+    printf("Test idx: %d \n", test_idx);
+    printf("Output: len: %d \n", out_idxs[test_idx]-out_idxs[test_idx-1]);
+    print_mat(&outputs[out_idxs[test_idx]*kerns.num], out_idxs[test_idx]-out_idxs[test_idx-1], kerns.num);
+    printf("Input: len: %d \n", wordvecs.lens[test_idx]-wordvecs.lens[test_idx-1]);
+    print_mat(&wordvecs.w[wordvecs.lens[test_idx]*wordvecs.dim], wordvecs.lens[test_idx]-wordvecs.lens[test_idx-1], wordvecs.dim);
     
-    int inst = 7;
-    printf("Output of %dth index: \n", inst);
-    printf("out_idx=%d, length=%d, output_length=%d \n", kerns.num*output_idxs[inst], wordvecs.lens[inst]-wordvecs.lens[inst-1], output_idxs[inst]-output_idxs[inst-1]);
-    print_mat(&outputs[kerns.num*output_idxs[inst]], output_idxs[inst]-output_idxs[inst-1], kerns.num);
+    free(wordvecs.lens);
+    free(wordvecs.w);
+    free(kerns.k);
+    free(out_idxs);
+    free(outputs);
 }
