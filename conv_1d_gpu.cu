@@ -112,7 +112,6 @@ void conv1d_kernel(WORDVECS wordvec, KERNS kerns, OUTPUTS output){
     long len, out_len;
     float* wv;
     float* out;
-    float* sum;
     int dim = wordvec.dim, out_dim=kerns.num;
     for (int inst=0; inst < wordvec.b_size; inst++) {
         if (inst == 0) {
@@ -198,7 +197,7 @@ int main(int argc, char* argv[]){
     
     
     //Allocate kernels and initilize
-    kerns.k = calloc(kerns.height*kerns.width*kerns.num, sizeof(float));
+    kerns.k = (float *) calloc(kerns.height*kerns.width*kerns.num, sizeof(float));
     init_kerns(kerns.k, kerns.num, kerns.width, kerns.height);
     
     // Test kernel initialization
