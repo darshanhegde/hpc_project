@@ -256,7 +256,7 @@ int main(int argc, char* argv[]){
     cudaMalloc((void **) &(d_k), sizeof(float)*kerns.num*kerns.width*kerns.height);
     printf("Done allocating d_k \n");
     
-    cudaMemcpy(d_k, &kerns.k, sizeof(float)*kerns.num*kerns.width*kerns.height, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_k, kerns.k, sizeof(float)*kerns.num*kerns.width*kerns.height, cudaMemcpyHostToDevice);
     printf("Done transfering kerns.k -> d_k \n");
     d_kerns.k = d_k;
     
