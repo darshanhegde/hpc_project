@@ -246,19 +246,15 @@ int main(int argc, char* argv[]){
     //Select the device you want to run the code.
     cudaSetDevice(device_id);
     
-    float* dummy;
-    cudaMalloc((void **) &dummy, sizeof(float));
-    printf("Done allocating float.");
-    
     // Allocate GPU WORDVEC, KERNS and OUTPUT
-//    WORDVECS* d_wordvec;
-//    cudaMalloc((void **) &d_wordvec, sizeof(WORDVECS));
-//    KERNS* d_kerns;
-//    cudaMalloc((void **) &d_kerns, sizeof(KERNS));
-//    OUTPUTS* d_output;
-//    cudaMalloc((void **) &d_output, sizeof(OUTPUTS));
-//    printf("Done allocating WORDVEC, KERNS and OUTPUT.");
-//    
+    WORDVECS* d_wordvec;
+    cudaMalloc((void **) &d_wordvec, sizeof(WORDVECS));
+    KERNS* d_kerns;
+    cudaMalloc((void **) &d_kerns, sizeof(KERNS));
+    OUTPUTS* d_output;
+    cudaMalloc((void **) &d_output, sizeof(OUTPUTS));
+    printf("Done allocating WORDVEC, KERNS and OUTPUT.");
+//
 //    // Initialize device kerns
 //    cudaMemcpy(d_kerns, &kerns, sizeof(KERNS), cudaMemcpyHostToDevice);
 //    
@@ -283,9 +279,9 @@ int main(int argc, char* argv[]){
 //    
 //    //Free all GPU allocated resources.
 //    cudaFree(d_kerns->k);
-//    cudaFree(d_wordvec);
-//    cudaFree(d_kerns);
-//    cudaFree(d_output);
+    cudaFree(d_wordvec);
+    cudaFree(d_kerns);
+    cudaFree(d_output);
     
     //Free all host allocated resources
     for (int batch=0; batch < n_batches; batch++) {
