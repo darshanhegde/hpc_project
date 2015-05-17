@@ -1,3 +1,4 @@
+DEVICE=0
 EXECS:conv_1d.o
 
 all: ${EXECS}
@@ -13,7 +14,7 @@ conv_1d_gpu.o: conv_1d_gpu.cu
 	nvcc -o conv_1d_gpu.o conv_1d_gpu.cu
 	
 test_gpu: conv_1d_gpu.o
-	./conv_1d_gpu.o 10 10 3 7 5
+	./conv_1d_gpu.o 10 10 3 7 5 ${DEVICE}
 	
 sync: Makefile conv_1d_gpu.cu
 	git add Makefile conv_1d_gpu.cu

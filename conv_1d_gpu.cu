@@ -142,8 +142,8 @@ void conv1d_kernel(WORDVECS wordvec, KERNS kerns, OUTPUTS output){
 
 
 int main(int argc, char* argv[]){
-    if (argc != 6) {
-        printf("USAGE: ./conv_1d.o <n_batches> <batch_size> <dim> <kern_w> <n_kerns>");
+    if (argc != 7) {
+        printf("USAGE: ./conv_1d.o <n_batches> <batch_size> <dim> <kern_w> <n_kerns> <device_id>");
         exit(1);
     }
     
@@ -160,6 +160,7 @@ int main(int argc, char* argv[]){
     kerns.height = dim;
     kerns.width = atoi(argv[4]);
     kerns.num = atoi(argv[5]);
+    int device_id = atoi(argv[6]);
     printf("n_batches=%d, batch_size=%d, dim=%d, kern_w=%d, kern_h=%d, n_kerns=%d\n", n_batches, batch_size, dim, kerns.width, kerns.height, kerns.num);
     
     WORDVECS* wordvecs = (WORDVECS*) calloc(n_batches, sizeof(WORDVECS));
@@ -241,6 +242,9 @@ int main(int argc, char* argv[]){
     } else {
         print_mat(&(outputs[test_batch].out[outputs[test_batch].lens[test_idx-1]*kerns.num]), outputs[test_batch].lens[test_idx]-outputs[test_batch].lens[test_idx-1], kerns.num);
     }
+    
+    //Select the device you want to run the code.
+    cudaSetDevice(device_id);
     
     // Allocate GPU WORDVEC, KERNS and OUTPUT
     WORDVECS* d_wordvec;
