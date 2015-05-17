@@ -260,18 +260,16 @@ int main(int argc, char* argv[]){
     printf("Done transfering kerns.k -> d_k \n");
     d_kerns.k = d_k;
     
-    float* k = (float*) calloc(kerns.num*kerns.width*kerns.height, sizeof(float));
     // Readback and check if the results are right
-    cudaMemcpy(k, d_k, sizeof(float)*kerns.num*kerns.width*kerns.height, cudaMemcpyDeviceToHost);
+    cudaMemcpy(kerns.k, d_k, sizeof(float)*kerns.num*kerns.width*kerns.height, cudaMemcpyDeviceToHost);
     
     printf("GPU kernel values. \n");
     for (int i=0; i<kerns.num; i++) {
         printf("Kernel: %d\n", i);
-        print_mat(&k[i*kerns.height*kerns.width], kerns.width, kerns.height);
+        print_mat(&kerns.k[i*kerns.height*kerns.width], kerns.width, kerns.height);
         printf("\n\n");
     }
 
-    free(k);
     // GPU just on the test batch
     
     
