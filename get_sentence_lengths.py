@@ -21,7 +21,9 @@ def get_sentence_lengths(trip_advisor_dataset_path):
     for data_line in trip_advisor_iter:
         review = data_line[review_idx]
         for sentence in review.split("<*>"):
-            sentence_lengths.append(len(sentence.split()))
+            sent_len = len(sentence.split())
+            if sent_len > 0:
+                sentence_lengths.append(len(sentence.split()))
 
     trip_advisor_dataset.close()
     return sentence_lengths
