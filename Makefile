@@ -7,7 +7,7 @@ conv_1d.o: conv_1d.c
 	gcc -std=c99 conv_1d.c -o conv_1d.o
 	
 test_cpu: conv_1d.o
-	./conv_1d.o 10 10 2 5 3
+	./conv_1d.o 500 50 50 7 6
 	
 test_gpu:
 	git pull
