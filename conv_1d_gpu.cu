@@ -151,7 +151,7 @@ void conv1d_kernel(){
     int bIdx = blockIdx.x;
     
     __syncthreads();
-    printf("Reporting tIdx=%d, bIdx=%d\n", tIdx, bIdx);
+//    printf("Reporting tIdx=%d, bIdx=%d\n", tIdx, bIdx);
     __syncthreads();
     
 //    long len, out_len;
