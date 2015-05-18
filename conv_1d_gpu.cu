@@ -414,11 +414,13 @@ int main(int argc, char* argv[]){
             printf("***ERROR***: %s\n", cudaGetErrorString(err));
         
         // Verify GPU Results
-        printf("GPU Output: \n");
-        if (test_idx == 0) {
-            print_mat(&(outputs[test_batch].out[0*kerns.num]), outputs[test_batch].lens[test_idx], kerns.num);
-        } else {
-            print_mat(&(outputs[test_batch].out[outputs[test_batch].lens[test_idx-1]*kerns.num]), outputs[test_batch].lens[test_idx]-outputs[test_batch].lens[test_idx-1], kerns.num);
+        if (batch == test_batch) {
+            printf("GPU Output: \n");
+            if (test_idx == 0) {
+                print_mat(&(outputs[test_batch].out[0*kerns.num]), outputs[test_batch].lens[test_idx], kerns.num);
+            } else {
+                print_mat(&(outputs[test_batch].out[outputs[test_batch].lens[test_idx-1]*kerns.num]), outputs[test_batch].lens[test_idx]-outputs[test_batch].lens[test_idx-1], kerns.num);
+            }
         }
         
         // Free GPU allocations for mini-batch
