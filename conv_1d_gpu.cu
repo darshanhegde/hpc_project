@@ -140,6 +140,7 @@ void conv1d(WORDVECS wordvec, KERNS kerns, OUTPUTS output){
     }
 }
 
+__global__
 void conv1d_kernel(WORDVECS wordvec, KERNS kerns, OUTPUTS output){
     /*
      Performs 1d convolution on CPU for each mini-batch at a time.
