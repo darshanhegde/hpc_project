@@ -329,13 +329,15 @@ int main(int argc, char* argv[]){
         if (DEBUG && test_batch == batch) {
             conv1d(wordvec, kerns, output);
             
-            printf("Output: \n");
+            printf("CPU Output: \n");
             if (test_idx == 0) {
                 print_mat(&(output.out[0*kerns.num]), output.lens[test_idx], kerns.num);
             } else {
                 print_mat(&(output.out[output.lens[test_idx-1]*kerns.num]), output.lens[test_idx]-output
                           .lens[test_idx-1], kerns.num);
             }
+            
+            memset(output, 0, sizeof(float)*kerns.num*output.lens[batch_size-1]);
         }
 
         

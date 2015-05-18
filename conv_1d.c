@@ -201,9 +201,9 @@ int main(int argc, char* argv[]){
         
         // Test sentence lens for a given mini-batch
         if (DEBUG && (test_batch == batch)) {
-            printf("i=%d, len=%d \n", 0, wordvec.lens[0]);
+            printf("i=%d, len=%ld \n", 0, wordvec.lens[0]);
             for (int i=1; i < wordvec.b_size; i++) {
-                printf("i=%d, len=%d \n", i, wordvec.lens[i] - wordvec.lens[i-1]);
+                printf("i=%d, len=%ld \n", i, wordvec.lens[i] - wordvec.lens[i-1]);
             }
         }
         
@@ -230,9 +230,9 @@ int main(int argc, char* argv[]){
         
         // Test output lens for a given mini-batch
         if (DEBUG && test_batch == batch) {
-            printf("i=%d, len=%d, out_len=%d \n", 0, wordvec.lens[0], output.lens[0]);
+            printf("i=%d, len=%ld, out_len=%ld \n", 0, wordvec.lens[0], output.lens[0]);
             for (int i=1; i < wordvec.b_size; i++) {
-                printf("i=%d, len=%d, out_len=%d \n", i, wordvec.lens[i] - wordvec.lens[i-1],  output.lens[i]-output.lens[i-1]);
+                printf("i=%d, len=%ld, out_len=%ld \n", i, wordvec.lens[i] - wordvec.lens[i-1],  output.lens[i]-output.lens[i-1]);
             }
         }
         
@@ -258,4 +258,7 @@ int main(int argc, char* argv[]){
         free(output.out);
         free(output.lens);
     }
+    
+    free(kerns.k);
+    free(sent_lens);
 }
