@@ -370,7 +370,7 @@ int main(int argc, char* argv[]){
     d_output.dim = kerns.num;
     d_output.b_size = batch_size;
     long* d_olens;
-    cudaMalloc((void **) &(d_olens), sizeof(long));
+    cudaMalloc((void **) &(d_olens), sizeof(long)*batch_size);
     printf("Done allocating d_olens \n");
     
     err = cudaGetLastError();
