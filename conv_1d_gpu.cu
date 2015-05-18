@@ -371,7 +371,7 @@ int main(int argc, char* argv[]){
     
     // Launch the kernel
     
-    conv1d_kernel<<<batch_size, dim>>>();
+    conv1d_kernel<<<10, 32>>>();
     
     cudaError_t err = cudaGetLastError();
     if (err != cudaSuccess)
