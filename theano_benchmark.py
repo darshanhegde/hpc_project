@@ -12,8 +12,8 @@ def read_sentence_lens(sentence_lens_path):
     sentence_lens_file = open(sentence_lens_path, "rU")
     for str_len in sentence_lens_file:
         length = int(str_len.strip())
-        if length > 125:
-            length = 125
+        if length > 150:
+            length = 150
         sent_lens.append(length)
     return sent_lens
 

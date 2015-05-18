@@ -13,7 +13,7 @@
 #define MIN(a,b) ((a<b)?a:b)
 #define MAX(a,b) ((a>b)?a:b)
 
-#define DEBUG 1
+#define DEBUG 0
 
 typedef struct WORDVECS{
     float* w;
@@ -51,8 +51,8 @@ void read_sentence_lens(const char* file_path, int* sent_lens, int n_sents){
     int fret = 1;
     for (int i=0; (i<n_sents && fret != EOF); i++) {
         fret = fscanf(fp, "%d\n", &len);
-        if (len > 125) {
-            len = 125;
+        if (len > 150) {
+            len = 150;
         }
         sent_lens[i] = len;
     }
