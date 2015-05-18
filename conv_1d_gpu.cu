@@ -147,7 +147,7 @@ void conv1d_kernel(){
     /*
      Performs 1d convolution on CPU for each mini-batch at a time.
      */
-    int tIdx = blockIdx.x * blockDim.x + threadIdx.x;
+    int tIdx = threadIdx.x;
     int bIdx = blockIdx.x;
     
     __syncthreads();
@@ -403,7 +403,7 @@ int main(int argc, char* argv[]){
     
     // Launch the kernel
     
-    conv1d_kernel<<<10, 32>>>();
+    conv1d_kernel<<<batch_size, dim>>>();
     
     err = cudaGetLastError();
     if (err != cudaSuccess)
