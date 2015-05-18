@@ -105,6 +105,41 @@ void print_mat(float* mat, int width,int height){
     printf("])\n");
 }
 
+void conv1d(WORDVECS wordvec, KERNS kerns, OUTPUTS output){
+    /*
+     Performs 1d convolution on CPU for each mini-batch at a time.
+     */
+    long len, out_len;
+    float* wv;
+    float* out;
+    int dim = wordvec.dim, out_dim=kerns.num;
+    for (int inst=0; inst < wordvec.b_size; inst++) {
+        if (inst == 0) {
+            len = wordvec.lens[inst];
+            out_len = output.lens[inst];
+            wv = &wordvec.w[dim*0];
+            out = &output.out[out_dim*0];
+        } else {
+            len = wordvec.lens[inst] - wordvec.lens[inst-1];
+            out_len = output.lens[inst] - output.lens[inst-1];
+            wv = &wordvec.w[dim*wordvec.lens[inst-1]];
+            out = &output.out[out_dim*output.lens[inst-1]];
+        }
+        for (int i=0; i < out_len; i++) {
+            for (int k=0; k < kerns.num; k++) {
+                float s = 0.;
+                for (int j = MAX(0, i-kerns.width+1); j <= MIN(i, len-1); j++) {
+                    int k_sub=(kerns.width-1-i+j);
+                    for (int d=0; d<dim; d++) {
+                        s += (wv[j*dim+d] * kerns.k[k*kerns.width*kerns.height + k_sub*kerns.height + d]);
+                    }
+                }
+                out[i*kerns.num+k] += s;
+            }
+        }
+    }
+}
+
 void conv1d_kernel(WORDVECS wordvec, KERNS kerns, OUTPUTS output){
     /*
      Performs 1d convolution on CPU for each mini-batch at a time.
@@ -232,7 +267,7 @@ int main(int argc, char* argv[]){
     
     // CPU loop
     for (int batch=0; batch < n_batches; batch++) {
-            conv1d_kernel(wordvecs[batch], kerns, outputs[batch]);
+            conv1d(wordvecs[batch], kerns, outputs[batch]);
     }
     
     //Testing computation
@@ -259,6 +294,9 @@ int main(int argc, char* argv[]){
     cudaMemcpy(d_k, kerns.k, sizeof(float)*kerns.num*kerns.width*kerns.height, cudaMemcpyHostToDevice);
     printf("Done transfering kerns.k -> d_k \n");
     d_kerns.k = d_k;
+    d_kerns.num = kerns.num;
+    d_kerns.width = kerns.width;
+    d_kerns.height = kerns.height;
     
     // Readback and check if the results are right
     cudaMemcpy(kerns.k, d_k, sizeof(float)*kerns.num*kerns.width*kerns.height, cudaMemcpyDeviceToHost);
@@ -272,7 +310,50 @@ int main(int argc, char* argv[]){
 
     // GPU just on the test batch
     
+    // Allocate and initialize wordvecs.w and wordvecs.lens on GPU
+    d_wordvec.dim = dim;
+    d_wordvec.b_size = batch_size;
+    long* d_wlens;
+    cudaMalloc((void **) &(d_wlens), sizeof(long));
+    printf("Done allocating d_wlens \n");
     
+    cudaMemcpy(d_wlens, wordvecs[test_batch].lens, sizeof(long)*batch_size, cudaMemcpyHostToDevice);
+    printf("Done transfering wordvecs[test_batch].lens -> d_wlens \n");
+    d_wordvec.lens = d_wlens;
+    
+    float* d_w;
+    cudaMalloc((void **) &(d_w), sizeof(float)*dim*wordvecs[test_batch].lens[batch_size-1]);
+    printf("Done allocating d_w \n");
+    
+    cudaMemcpy(d_w, wordvecs[test_batch].w, sizeof(float)*dim*wordvecs[test_batch].lens[batch_size-1], cudaMemcpyHostToDevice);
+    printf("Done transfering wordvecs[test_batch].w -> d_w \n");
+    d_wordvec.w = d_w;
+    
+    // Allocate and initialize outputs.out and outputs.lens on GPU
+    d_output.dim = kerns.num;
+    d_output.b_size = batch_size;
+    long* d_olens;
+    cudaMalloc((void **) &(d_olens), sizeof(long));
+    printf("Done allocating d_olens \n");
+    
+    cudaMemcpy(d_olens, outputs[test_batch].lens, sizeof(long)*batch_size, cudaMemcpyHostToDevice);
+    printf("Done transfering wordvecs[test_batch].lens -> d_olens \n");
+    d_output.lens = d_olens;
+    
+    float* d_out;
+    cudaMalloc((void **) &(d_out), sizeof(float)*kerns.num*outputs[test_batch].lens[batch_size-1]);
+    printf("Done allocating d_out \n");
+    
+    cudaMemcpy(d_out, outputs[test_batch].out, sizeof(float)*kerns.num*outputs[test_batch].lens[batch_size-1], cudaMemcpyHostToDevice);
+    printf("Done transfering wordvecs[test_batch].w -> d_w \n");
+    d_output.out = d_out;
+    
+    
+    // Free GPU allocations for mini-batch
+    cudaFree(d_wlens);
+    cudaFree(d_w);
+    cudaFree(d_olens);
+    cudaFree(d_out);
     
     //Free all GPU allocated resources.
     cudaFree(d_k);
