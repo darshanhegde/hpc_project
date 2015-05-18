@@ -11,7 +11,7 @@
 #define MIN(a,b) ((a<b)?a:b)
 #define MAX(a,b) ((a>b)?a:b)
 
-#define DEBUG 1
+#define DEBUG 0
 
 typedef struct WORDVECS{
     float* w;
