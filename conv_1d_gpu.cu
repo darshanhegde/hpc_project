@@ -35,7 +35,7 @@ typedef struct OUTPUTS{
 }OUTPUTS;
 
 
-void read_sentence_lens(char* file_path, WORDVECS* wordvecs, int n_batches){
+void read_sentence_lens(const char* file_path, WORDVECS* wordvecs, int n_batches){
     /*
      Reads sentence lengths from Trip Advisor Dataset. Assumes that sentence 
      lengths are non-zero.
@@ -225,9 +225,9 @@ int main(int argc, char* argv[]){
     // Test sentence lens for a given mini-batch
     int test_batch = 9, test_idx = 9;
     if (DEBUG){
-        printf("i=%d, len=%d \n", 0, wordvecs[test_batch].lens[0]);
+        printf("i=%d, len=%ld \n", 0, wordvecs[test_batch].lens[0]);
         for (int i=1; i < wordvecs[test_batch].b_size; i++) {
-            printf("i=%d, len=%d \n", i, wordvecs[test_batch].lens[i] - wordvecs[test_batch].lens[i-1]);
+            printf("i=%d, len=%ld \n", i, wordvecs[test_batch].lens[i] - wordvecs[test_batch].lens[i-1]);
         }
     }
     
@@ -274,9 +274,9 @@ int main(int argc, char* argv[]){
     
     // Test output lens for a given mini-batch
     if (DEBUG) {
-        printf("i=%d, len=%d, out_len=%d \n", 0, wordvecs[test_batch].lens[0], outputs[test_batch].lens[0]);
+        printf("i=%d, len=%ld, out_len=%ld \n", 0, wordvecs[test_batch].lens[0], outputs[test_batch].lens[0]);
         for (int i=1; i < wordvecs[test_batch].b_size; i++) {
-            printf("i=%d, len=%d, out_len=%d \n", i, wordvecs[test_batch].lens[i] - wordvecs[test_batch].lens[i-1],  outputs[test_batch].lens[i]-outputs[test_batch].lens[i-1]);
+            printf("i=%d, len=%ld, out_len=%ld \n", i, wordvecs[test_batch].lens[i] - wordvecs[test_batch].lens[i-1],  outputs[test_batch].lens[i]-outputs[test_batch].lens[i-1]);
         }
     }
 
