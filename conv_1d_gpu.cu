@@ -150,10 +150,6 @@ void conv1d_kernel(WORDVECS wordvec, KERNS kerns, OUTPUTS output){
     int tIdx = threadIdx.x;
     int bIdx = blockIdx.x;
     
-    __syncthreads();
-    printf("Reporting tIdx=%d, bIdx=%d\n", tIdx, bIdx);
-    __syncthreads();
-    
     long len, out_len;
     float* wv;
     float* out;
@@ -187,7 +183,6 @@ void conv1d_kernel(WORDVECS wordvec, KERNS kerns, OUTPUTS output){
             __syncthreads();
         }
     }
-    __syncthreads();
 }
 
 
