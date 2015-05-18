@@ -166,9 +166,7 @@ void conv1d_kernel(WORDVECS wordvec, KERNS kerns, OUTPUTS output){
     float* out;
     int dim = wordvec.dim, out_dim=kerns.num;
     
-    assert(blockDim.x == dim);
-    
-    extern __shared__ float s[];
+    extern __shared__ float sdata[];
     
     if (bIdx == 0) {
         len = wordvec.lens[bIdx];
@@ -185,12 +183,23 @@ void conv1d_kernel(WORDVECS wordvec, KERNS kerns, OUTPUTS output){
     
     for (int i=0; i < out_len; i++) {
         for (int k=0; k < kerns.num; k++) {
-            s[tIdx] = 0.;
+            sdata[tIdx] = 0.;
             for (int j = MAX(0, i-kerns.width+1); j <= MIN(i, len-1); j++) {
                 int k_sub=(kerns.width-1-i+j);
-                s[tIdx] += (wv[j*dim+tIdx] * kerns.k[k*kerns.width*kerns.height + k_sub*kerns.height + tIdx]);
+                sdata[tIdx] += (wv[j*dim+tIdx] * kerns.k[k*kerns.width*kerns.height + k_sub*kerns.height + tIdx]);
             }
-            atomicAdd(&out[i*kerns.num+k], s[tIdx]);
+            
+            // Do parallel reduction
+            for (unsigned int s=blockDim.x/2; s>0; s>>=1) {
+                if (tIdx < s) {
+                    sdata[tIdx] += sdata[tIdx + s]; }
+                    __syncthreads();
+                }
+            
+            if (tIdx == 0) {
+                out[i*kerns.num+k] = sdata[0];
+            }
+//            atomicAdd(&out[i*kerns.num+k], s[tIdx]);
             __syncthreads();
         }
     }
