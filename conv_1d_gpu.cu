@@ -6,6 +6,7 @@
 #include <time.h>
 #include <limits.h>
 #include <assert.h>
+#include <cuda.h>
 
 #define MIN(a,b) ((a<b)?a:b)
 #define MAX(a,b) ((a>b)?a:b)
