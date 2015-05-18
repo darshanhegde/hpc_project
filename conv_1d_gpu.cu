@@ -420,13 +420,13 @@ int main(int argc, char* argv[]){
         } else {
             print_mat(&(outputs[test_batch].out[outputs[test_batch].lens[test_idx-1]*kerns.num]), outputs[test_batch].lens[test_idx]-outputs[test_batch].lens[test_idx-1], kerns.num);
         }
+        
+        // Free GPU allocations for mini-batch
+        cudaFree(d_wlens);
+        cudaFree(d_w);
+        cudaFree(d_olens);
+        cudaFree(d_out);
     }
-
-    // Free GPU allocations for mini-batch
-    cudaFree(d_wlens);
-    cudaFree(d_w);
-    cudaFree(d_olens);
-    cudaFree(d_out);
     
     //Free all GPU allocated resources.
     cudaFree(d_k);
