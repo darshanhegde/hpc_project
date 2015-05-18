@@ -371,12 +371,7 @@ int main(int argc, char* argv[]){
     
     // Launch the kernel
     
-    conv1d_kernel<<<batch_size, dim, dim*sizeof(float)>>>(d_wordvec, d_kerns, d_output);
-    
-    cudaError_enum cudaerr = cudaDeviceSynchronize();
-    if (cudaerr != CUDA_SUCCESS)
-        printf("kernel launch failed with error \"%s\".\n",
-            cudaGetErrorString(cudaerr));
+    conv1d_kernel<<<batch_size, dim>>>(d_wordvec, d_kerns, d_output);
     
     
     // Get output results back
