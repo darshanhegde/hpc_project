@@ -154,15 +154,15 @@ void conv1d_kernel(){
     printf("Reporting tIdx=%d, bIdx=%d\n", tIdx, bIdx);
     __syncthreads();
     
-//    long len, out_len;
-//    float* wv;
-//    float* out;
-//    int dim = wordvec.dim, out_dim=kerns.num;
-//    
-//    assert(blockDim.x == dim);
-//    
-//    extern __shared__ float s[];
-//    
+    long len, out_len;
+    float* wv;
+    float* out;
+    int dim = wordvec.dim, out_dim=kerns.num;
+    
+    assert(blockDim.x == dim);
+    
+    extern __shared__ float s[];
+    
 //    if (bIdx == 0) {
 //        len = wordvec.lens[bIdx];
 //        out_len = output.lens[bIdx];
@@ -403,7 +403,7 @@ int main(int argc, char* argv[]){
     
     // Launch the kernel
     
-    conv1d_kernel<<<batch_size, dim>>>();
+    conv1d_kernel<<<batch_size, dim, sizeof(float)*dim>>>(d_wordvec, d_kerns, d_output);
     
     err = cudaGetLastError();
     if (err != cudaSuccess)
