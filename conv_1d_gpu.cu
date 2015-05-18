@@ -145,7 +145,41 @@ void conv1d_kernel(WORDVECS wordvec, KERNS kerns, OUTPUTS output){
     /*
      Performs 1d convolution on CPU for each mini-batch at a time.
      */
+    int tIdx = blockIdx.x * blockDim.x + threadIdx.x;
+    int bIdx = blockIdx.x;
+    
+    long len, out_len;
+    float* wv;
+    float* out;
+    int dim = wordvec.dim, out_dim=kerns.num;
+    
+    assert(blockDim.x == dim);
+    
+    extern __shared__ float s[];
+    
+    if (bIdx == 0) {
+        len = wordvec.lens[bIdx];
+        out_len = output.lens[bIdx];
+        wv = &wordvec.w[dim*0];
+        out = &output.out[out_dim*0];
+    } else {
+        len = wordvec.lens[bIdx] - wordvec.lens[bIdx-1];
+        out_len = output.lens[bIdx] - output.lens[bIdx-1];
+        wv = &wordvec.w[dim*wordvec.lens[bIdx-1]];
+        out = &output.out[out_dim*output.lens[bIdx-1]];
     }
+    
+    for (int i=0; i < out_len; i++) {
+        for (int k=0; k < kerns.num; k++) {
+            s[tIdx] = 0.;
+            for (int j = MAX(0, i-kerns.width+1); j <= MIN(i, len-1); j++) {
+                int k_sub=(kerns.width-1-i+j);
+                s[tIdx] += (wv[j*dim+tIdx] * kerns.k[k*kerns.width*kerns.height + k_sub*kerns.height + tIdx]);
+            }
+            atomicAdd(&out[i*kerns.num+k], s[tIdx]);
+        }
+    }
+}
 
 
 int main(int argc, char* argv[]){
@@ -328,7 +362,7 @@ int main(int argc, char* argv[]){
     
     // Launch the kernel
     
-    
+    conv1d_kernel<<<dim, batch_size, dim*sizeof(float)>>>(d_wordvec, d_kerns, d_output);
     
     // Get output results back
     cudaMemcpy(outputs[test_batch].out, d_out, sizeof(float)*kerns.num*outputs[test_batch].lens[batch_size-1], cudaMemcpyDeviceToHost);
