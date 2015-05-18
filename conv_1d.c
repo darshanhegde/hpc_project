@@ -105,14 +105,13 @@ void print_mat(float* mat, int width,int height){
     printf("])\n");
 }
 
-void conv1d_kernel(WORDVECS wordvec, KERNS kerns, OUTPUTS output, int test_idx){
+void conv1d_kernel(WORDVECS wordvec, KERNS kerns, OUTPUTS output){
     /*
      Performs 1d convolution on CPU for each mini-batch at a time.
      */
     long len, out_len;
     float* wv;
     float* out;
-    float* sum;
     int dim = wordvec.dim, out_dim=kerns.num;
     for (int inst=0; inst < wordvec.b_size; inst++) {
         if (inst == 0) {
@@ -126,12 +125,6 @@ void conv1d_kernel(WORDVECS wordvec, KERNS kerns, OUTPUTS output, int test_idx){
             wv = &wordvec.w[dim*wordvec.lens[inst-1]];
             out = &output.out[out_dim*output.lens[inst-1]];
         }
-        if (inst == test_idx) {
-            printf("Input Before: \n");
-            print_mat(wv, len, dim);
-            printf("Output Before: \n");
-            print_mat(out, out_len, kerns.num);
-        }
         for (int i=0; i < out_len; i++) {
             for (int k=0; k < kerns.num; k++) {
                 float s = 0.;
@@ -143,10 +136,6 @@ void conv1d_kernel(WORDVECS wordvec, KERNS kerns, OUTPUTS output, int test_idx){
                 }
                 out[i*kerns.num+k] += s;
             }
-        }
-        if (inst == test_idx) {
-            printf("Output with len(%d) After: \n", out_len);
-            print_mat(out, out_len, kerns.num);
         }
     }
 }
@@ -186,7 +175,7 @@ int main(int argc, char* argv[]){
     read_sentence_lens("sentence_lens.txt", wordvecs, n_batches);
     
     // Test sentence lens for a given mini-batch
-    int test_batch = 0, test_idx = 9;
+    int test_batch = 9, test_idx = 9;
     printf("i=%d, len=%d \n", 0, wordvecs[test_batch].lens[0]);
     for (int i=1; i < wordvecs[test_batch].b_size; i++) {
         printf("i=%d, len=%d \n", i, wordvecs[test_batch].lens[i] - wordvecs[test_batch].lens[i-1]);
@@ -200,10 +189,15 @@ int main(int argc, char* argv[]){
     
     //Testing initialization
     printf("Input: \n");
-    print_mat(&(wordvecs[test_batch].w[wordvecs[test_batch].lens[test_idx-1]*dim]), wordvecs[test_batch].lens[test_idx]-wordvecs[test_batch].lens[test_idx-1], wordvecs[test_batch].dim);
+    if (test_idx == 0) {
+        print_mat(&(wordvecs[test_batch].w[0*dim]), wordvecs[test_batch].lens[test_idx], wordvecs[test_batch].dim);
+    } else {
+        print_mat(&(wordvecs[test_batch].w[wordvecs[test_batch].lens[test_idx-1]*dim]), wordvecs[test_batch].lens[test_idx]-wordvecs[test_batch].lens[test_idx-1], wordvecs[test_batch].dim);
+    }
+    
     
     //Allocate kernels and initilize
-    kerns.k = calloc(kerns.height*kerns.width*kerns.num, sizeof(float));
+    kerns.k = (float *)calloc(kerns.height*kerns.width*kerns.num, sizeof(float));
     init_kerns(kerns.k, kerns.num, kerns.width, kerns.height);
     
     // Test kernel initialization
@@ -217,7 +211,7 @@ int main(int argc, char* argv[]){
     OUTPUTS* outputs = (OUTPUTS*) calloc(batch_size, sizeof(OUTPUTS));
     for (int batch=0; batch < n_batches; batch++) {
         outputs[batch].b_size = batch_size;
-        outputs[batch].dim = dim;
+        outputs[batch].dim = kerns.num;
         outputs[batch].lens = (long*) calloc(batch_size, sizeof(long));
         init_out_lens(&(outputs[batch].lens), wordvecs[batch].lens, batch_size, kerns.width);
     }
@@ -234,12 +228,17 @@ int main(int argc, char* argv[]){
     }
     
     for (int batch=0; batch < n_batches; batch++) {
-        if (batch == test_batch) {
-            conv1d_kernel(wordvecs[batch], kerns, outputs[batch], test_idx);
-        } else {
-            conv1d_kernel(wordvecs[batch], kerns, outputs[batch], -1);
-        }
+            conv1d_kernel(wordvecs[batch], kerns, outputs[batch]);
     }
+    
+    //Testing initialization
+    printf("Output: \n");
+    if (test_idx == 0) {
+        print_mat(&(outputs[test_batch].out[0*kerns.num]), outputs[test_batch].lens[test_idx], kerns.num);
+    } else {
+        print_mat(&(outputs[test_batch].out[outputs[test_batch].lens[test_idx-1]*kerns.num]), outputs[test_batch].lens[test_idx]-outputs[test_batch].lens[test_idx-1], kerns.num);
+    }
+
     
     //Free all allocated resources
     for (int batch=0; batch < n_batches; batch++) {
