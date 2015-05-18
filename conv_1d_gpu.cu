@@ -11,6 +11,8 @@
 #define MIN(a,b) ((a<b)?a:b)
 #define MAX(a,b) ((a>b)?a:b)
 
+#define DEBUG 1
+
 typedef struct WORDVECS{
     float* w;
     int dim;
@@ -222,9 +224,11 @@ int main(int argc, char* argv[]){
     
     // Test sentence lens for a given mini-batch
     int test_batch = 9, test_idx = 9;
-    printf("i=%d, len=%d \n", 0, wordvecs[test_batch].lens[0]);
-    for (int i=1; i < wordvecs[test_batch].b_size; i++) {
-        printf("i=%d, len=%d \n", i, wordvecs[test_batch].lens[i] - wordvecs[test_batch].lens[i-1]);
+    if (DEBUG){
+        printf("i=%d, len=%d \n", 0, wordvecs[test_batch].lens[0]);
+        for (int i=1; i < wordvecs[test_batch].b_size; i++) {
+            printf("i=%d, len=%d \n", i, wordvecs[test_batch].lens[i] - wordvecs[test_batch].lens[i-1]);
+        }
     }
     
     // Allocate word vectors and initialize
@@ -234,11 +238,13 @@ int main(int argc, char* argv[]){
     }
     
     //Testing initialization
-    printf("Input: \n");
-    if (test_idx == 0) {
-        print_mat(&(wordvecs[test_batch].w[0*dim]), wordvecs[test_batch].lens[test_idx], wordvecs[test_batch].dim);
-    } else {
-        print_mat(&(wordvecs[test_batch].w[wordvecs[test_batch].lens[test_idx-1]*dim]), wordvecs[test_batch].lens[test_idx]-wordvecs[test_batch].lens[test_idx-1], wordvecs[test_batch].dim);
+    if (DEBUG) {
+        printf("Input: \n");
+        if (test_idx == 0) {
+            print_mat(&(wordvecs[test_batch].w[0*dim]), wordvecs[test_batch].lens[test_idx], wordvecs[test_batch].dim);
+        } else {
+            print_mat(&(wordvecs[test_batch].w[wordvecs[test_batch].lens[test_idx-1]*dim]), wordvecs[test_batch].lens[test_idx]-wordvecs[test_batch].lens[test_idx-1], wordvecs[test_batch].dim);
+        }
     }
     
     
@@ -247,12 +253,15 @@ int main(int argc, char* argv[]){
     init_kerns(kerns.k, kerns.num, kerns.width, kerns.height);
     
     // Test kernel initialization
-    printf("CPU kernel values: \n");
-    for (int i=0; i<kerns.num; i++) {
-        printf("Kernel: %d\n", i);
-        print_mat(&kerns.k[i*kerns.height*kerns.width], kerns.width, kerns.height);
-        printf("\n\n");
+    if (DEBUG) {
+        printf("CPU kernel values: \n");
+        for (int i=0; i<kerns.num; i++) {
+            printf("Kernel: %d\n", i);
+            print_mat(&kerns.k[i*kerns.height*kerns.width], kerns.width, kerns.height);
+            printf("\n\n");
+        }
     }
+
     
     //Allocate and initialize outputs
     OUTPUTS* outputs = (OUTPUTS*) calloc(batch_size, sizeof(OUTPUTS));
@@ -264,33 +273,37 @@ int main(int argc, char* argv[]){
     }
     
     // Test output lens for a given mini-batch
-    printf("i=%d, len=%d, out_len=%d \n", 0, wordvecs[test_batch].lens[0], outputs[test_batch].lens[0]);
-    for (int i=1; i < wordvecs[test_batch].b_size; i++) {
-        printf("i=%d, len=%d, out_len=%d \n", i, wordvecs[test_batch].lens[i] - wordvecs[test_batch].lens[i-1],  outputs[test_batch].lens[i]-outputs[test_batch].lens[i-1]);
+    if (DEBUG) {
+        printf("i=%d, len=%d, out_len=%d \n", 0, wordvecs[test_batch].lens[0], outputs[test_batch].lens[0]);
+        for (int i=1; i < wordvecs[test_batch].b_size; i++) {
+            printf("i=%d, len=%d, out_len=%d \n", i, wordvecs[test_batch].lens[i] - wordvecs[test_batch].lens[i-1],  outputs[test_batch].lens[i]-outputs[test_batch].lens[i-1]);
+        }
     }
+
     
     //Allocate outputs
     for (int batch=0; batch < n_batches; batch++) {
         outputs[batch].out = (float*) calloc(kerns.num*outputs[batch].lens[batch_size-1], sizeof(float));
     }
     
-    
-    // CPU loop
-    for (int batch=0; batch < n_batches; batch++) {
+    if (DEBUG) {
+        // CPU loop
+        for (int batch=0; batch < n_batches; batch++) {
             conv1d(wordvecs[batch], kerns, outputs[batch]);
-    }
-    
-    //Testing computation
-    printf("CPU Output: \n");
-    if (test_idx == 0) {
-        print_mat(&(outputs[test_batch].out[0*kerns.num]), outputs[test_batch].lens[test_idx], kerns.num);
-    } else {
-        print_mat(&(outputs[test_batch].out[outputs[test_batch].lens[test_idx-1]*kerns.num]), outputs[test_batch].lens[test_idx]-outputs[test_batch].lens[test_idx-1], kerns.num);
-    }
-    
-    //Set back output results to zero.
-    for (int batch=0; batch < n_batches; batch++) {
-        memset(outputs[batch].out, 0, kerns.num*outputs[batch].lens[batch_size-1]*sizeof(float));
+        }
+        
+        //Testing computation
+        printf("CPU Output: \n");
+        if (test_idx == 0) {
+            print_mat(&(outputs[test_batch].out[0*kerns.num]), outputs[test_batch].lens[test_idx], kerns.num);
+        } else {
+            print_mat(&(outputs[test_batch].out[outputs[test_batch].lens[test_idx-1]*kerns.num]), outputs[test_batch].lens[test_idx]-outputs[test_batch].lens[test_idx-1], kerns.num);
+        }
+        
+        //Set back output results to zero.
+        for (int batch=0; batch < n_batches; batch++) {
+            memset(outputs[batch].out, 0, kerns.num*outputs[batch].lens[batch_size-1]*sizeof(float));
+        }
     }
     
     //Select the device you want to run the code.
@@ -304,10 +317,14 @@ int main(int argc, char* argv[]){
     // Allocate and Initialize kerns.k on device
     float* d_k;
     cudaMalloc((void **) &(d_k), sizeof(float)*kerns.num*kerns.width*kerns.height);
-    printf("Done allocating d_k \n");
+    if (DEBUG) {
+        printf("Done allocating d_k \n");
+    }
     
     cudaMemcpy(d_k, kerns.k, sizeof(float)*kerns.num*kerns.width*kerns.height, cudaMemcpyHostToDevice);
-    printf("Done transfering kerns.k -> d_k \n");
+    if (DEBUG) {
+        printf("Done transfering kerns.k -> d_k \n");
+    }
     d_kerns.k = d_k;
     d_kerns.num = kerns.num;
     d_kerns.width = kerns.width;
@@ -316,11 +333,13 @@ int main(int argc, char* argv[]){
     // Readback and check if the results are right
     cudaMemcpy(kerns.k, d_k, sizeof(float)*kerns.num*kerns.width*kerns.height, cudaMemcpyDeviceToHost);
     
-    printf("GPU kernel values. \n");
-    for (int i=0; i<kerns.num; i++) {
-        printf("Kernel: %d\n", i);
-        print_mat(&kerns.k[i*kerns.height*kerns.width], kerns.width, kerns.height);
-        printf("\n\n");
+    if (DEBUG) {
+        printf("GPU kernel values. \n");
+        for (int i=0; i<kerns.num; i++) {
+            printf("Kernel: %d\n", i);
+            print_mat(&kerns.k[i*kerns.height*kerns.width], kerns.width, kerns.height);
+            printf("\n\n");
+        }
     }
     
     for (int batch=0; batch < n_batches; batch++) {
@@ -329,14 +348,18 @@ int main(int argc, char* argv[]){
         d_wordvec.b_size = batch_size;
         long* d_wlens;
         cudaMalloc((void **) &(d_wlens), sizeof(long)*batch_size);
-        printf("Done allocating d_wlens \n");
+        if (DEBUG) {
+            printf("Done allocating d_wlens \n");
+        }
         
         cudaError_t err = cudaGetLastError();
         if (err != cudaSuccess)
             printf("***ERROR***: %s\n", cudaGetErrorString(err));
         
         cudaMemcpy(d_wlens, wordvecs[batch].lens, sizeof(long)*batch_size, cudaMemcpyHostToDevice);
-        printf("Done transfering wordvecs[batch].lens -> d_wlens \n");
+        if (DEBUG) {
+            printf("Done transfering wordvecs[batch].lens -> d_wlens \n");
+        }
         d_wordvec.lens = d_wlens;
         
         err = cudaGetLastError();
@@ -345,14 +368,18 @@ int main(int argc, char* argv[]){
         
         float* d_w;
         cudaMalloc((void **) &(d_w), sizeof(float)*dim*wordvecs[batch].lens[batch_size-1]);
-        printf("Done allocating d_w \n");
+        if (DEBUG) {
+            printf("Done allocating d_w \n");
+        }
         
         err = cudaGetLastError();
         if (err != cudaSuccess)
             printf("***ERROR***: %s\n", cudaGetErrorString(err));
         
         cudaMemcpy(d_w, wordvecs[batch].w, sizeof(float)*dim*wordvecs[batch].lens[batch_size-1], cudaMemcpyHostToDevice);
-        printf("Done transfering wordvecs[batch].w -> d_w \n");
+        if (DEBUG) {
+            printf("Done transfering wordvecs[batch].w -> d_w \n");
+        }
         d_wordvec.w = d_w;
         
         err = cudaGetLastError();
@@ -364,14 +391,18 @@ int main(int argc, char* argv[]){
         d_output.b_size = batch_size;
         long* d_olens;
         cudaMalloc((void **) &(d_olens), sizeof(long)*batch_size);
-        printf("Done allocating d_olens \n");
+        if (DEBUG) {
+            printf("Done allocating d_olens \n");
+        }
         
         err = cudaGetLastError();
         if (err != cudaSuccess)
             printf("***ERROR***: %s\n", cudaGetErrorString(err));
         
         cudaMemcpy(d_olens, outputs[batch].lens, sizeof(long)*batch_size, cudaMemcpyHostToDevice);
-        printf("Done transfering wordvecs[batch].lens -> d_olens \n");
+        if (DEBUG) {
+            printf("Done transfering wordvecs[batch].lens -> d_olens \n");
+        }
         d_output.lens = d_olens;
         
         err = cudaGetLastError();
@@ -380,14 +411,18 @@ int main(int argc, char* argv[]){
         
         float* d_out;
         cudaMalloc((void **) &(d_out), sizeof(float)*kerns.num*outputs[batch].lens[batch_size-1]);
-        printf("Done allocating d_out \n");
+        if (DEBUG) {
+            printf("Done allocating d_out \n");
+        }
         
         err = cudaGetLastError();
         if (err != cudaSuccess)
             printf("***ERROR***: %s\n", cudaGetErrorString(err));
         
         cudaMemcpy(d_out, outputs[batch].out, sizeof(float)*kerns.num*outputs[batch].lens[batch_size-1], cudaMemcpyHostToDevice);
-        printf("Done transfering outputs[batch].out -> d_out \n");
+        if (DEBUG) {
+            printf("Done transfering outputs[batch].out -> d_out \n");
+        }
         d_output.out = d_out;
         
         err = cudaGetLastError();
@@ -401,25 +436,29 @@ int main(int argc, char* argv[]){
         err = cudaGetLastError();
         if (err != cudaSuccess)
             printf("***ERROR***: %s\n", cudaGetErrorString(err));
-        
-        printf("Done launching the kernel. \n");
-        
+        if (DEBUG) {
+            printf("Done launching the kernel. \n");
+        }
         
         // Get output results back
         cudaMemcpy(outputs[batch].out, d_out, sizeof(float)*kerns.num*outputs[batch].lens[batch_size-1], cudaMemcpyDeviceToHost);
-        printf("Done transfering d_out -> outputs[batch].out \n");
+        if (DEBUG) {
+            printf("Done transfering d_out -> outputs[batch].out \n");
+        }
         
         err = cudaGetLastError();
         if (err != cudaSuccess)
             printf("***ERROR***: %s\n", cudaGetErrorString(err));
         
         // Verify GPU Results
-        if (batch == test_batch) {
-            printf("GPU Output: \n");
-            if (test_idx == 0) {
-                print_mat(&(outputs[test_batch].out[0*kerns.num]), outputs[test_batch].lens[test_idx], kerns.num);
-            } else {
-                print_mat(&(outputs[test_batch].out[outputs[test_batch].lens[test_idx-1]*kerns.num]), outputs[test_batch].lens[test_idx]-outputs[test_batch].lens[test_idx-1], kerns.num);
+        if (DEBUG) {
+            if (batch == test_batch) {
+                printf("GPU Output: \n");
+                if (test_idx == 0) {
+                    print_mat(&(outputs[test_batch].out[0*kerns.num]), outputs[test_batch].lens[test_idx], kerns.num);
+                } else {
+                    print_mat(&(outputs[test_batch].out[outputs[test_batch].lens[test_idx-1]*kerns.num]), outputs[test_batch].lens[test_idx]-outputs[test_batch].lens[test_idx-1], kerns.num);
+                }
             }
         }
         
