@@ -143,7 +143,7 @@ void conv1d(WORDVECS wordvec, KERNS kerns, OUTPUTS output){
 }
 
 __global__
-void conv1d_kernel(WORDVECS wordvec, KERNS kerns, OUTPUTS output){
+void conv1d_kernel(){
     /*
      Performs 1d convolution on CPU for each mini-batch at a time.
      */
@@ -371,11 +371,11 @@ int main(int argc, char* argv[]){
     
     // Launch the kernel
     
-    conv1d_kernel<<<batch_size, dim>>>(d_wordvec, d_kerns, d_output);
+    conv1d_kernel<<<batch_size, dim>>>();
     
     cudaError_t err = cudaGetLastError();
     if (err != cudaSuccess)
-        printf("Error: %s\n", cudaGetErrorString(err));
+        printf("Error <<< launch >>>: %s\n", cudaGetErrorString(err));
     
     
     // Get output results back
