@@ -170,6 +170,7 @@ void conv1d_kernel(WORDVECS wordvec, KERNS kerns, OUTPUTS output){
         out = &output.out[out_dim*output.lens[bIdx-1]];
     }
     
+    __syncthreads();
     for (int i=0; i < out_len; i++) {
         for (int k=0; k < kerns.num; k++) {
             s[tIdx] = 0.;
@@ -178,9 +179,11 @@ void conv1d_kernel(WORDVECS wordvec, KERNS kerns, OUTPUTS output){
                 s[tIdx] += (wv[j*dim+tIdx] * kerns.k[k*kerns.width*kerns.height + k_sub*kerns.height + tIdx]);
             }
             atomicAdd(&out[i*kerns.num+k], 1);
+            out[i*kerns.num+k] += 1;
             __syncthreads();
         }
     }
+    __syncthreads();
 }
 
 
