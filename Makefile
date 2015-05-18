@@ -11,7 +11,7 @@ test_cpu: conv_1d.o
 	
 test_gpu:
 	git pull
-	nvcc -o conv_1d_gpu.o conv_1d_gpu.cu
+	nvcc -arch=sm_21 -o conv_1d_gpu.o conv_1d_gpu.cu
 	./conv_1d_gpu.o 10 10 2 5 3 ${DEVICE}
 	
 sync: Makefile conv_1d_gpu.cu
