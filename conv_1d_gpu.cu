@@ -144,36 +144,7 @@ void conv1d_kernel(WORDVECS wordvec, KERNS kerns, OUTPUTS output){
     /*
      Performs 1d convolution on CPU for each mini-batch at a time.
      */
-    long len, out_len;
-    float* wv;
-    float* out;
-    int dim = wordvec.dim, out_dim=kerns.num;
-    for (int inst=0; inst < wordvec.b_size; inst++) {
-        if (inst == 0) {
-            len = wordvec.lens[inst];
-            out_len = output.lens[inst];
-            wv = &wordvec.w[dim*0];
-            out = &output.out[out_dim*0];
-        } else {
-            len = wordvec.lens[inst] - wordvec.lens[inst-1];
-            out_len = output.lens[inst] - output.lens[inst-1];
-            wv = &wordvec.w[dim*wordvec.lens[inst-1]];
-            out = &output.out[out_dim*output.lens[inst-1]];
-        }
-        for (int i=0; i < out_len; i++) {
-            for (int k=0; k < kerns.num; k++) {
-                float s = 0.;
-                for (int j = MAX(0, i-kerns.width+1); j <= MIN(i, len-1); j++) {
-                    int k_sub=(kerns.width-1-i+j);
-                    for (int d=0; d<dim; d++) {
-                        s += (wv[j*dim+d] * kerns.k[k*kerns.width*kerns.height + k_sub*kerns.height + d]);
-                    }
-                }
-                out[i*kerns.num+k] += s;
-            }
-        }
     }
-}
 
 
 int main(int argc, char* argv[]){
@@ -314,6 +285,7 @@ int main(int argc, char* argv[]){
     }
 
     // GPU just on the test batch
+    conv1d_kernel<<<dim, batch_size>>>(d_wordvec, d_kerns, d_output);
     
     // Allocate and initialize wordvecs.w and wordvecs.lens on GPU
     d_wordvec.dim = dim;
