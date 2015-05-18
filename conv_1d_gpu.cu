@@ -35,9 +35,9 @@ typedef struct OUTPUTS{
 }OUTPUTS;
 
 
-void read_sentence_lens(const char* file_path, WORDVECS* wordvecs, int n_batches){
+void read_sentence_lens(const char* file_path, int* sent_lens, int n_sents){
     /*
-     Reads sentence lengths from Trip Advisor Dataset. Assumes that sentence 
+     Reads sentence lengths from Trip Advisor Dataset. Assumes that sentence
      lengths are non-zero.
      */
     int len=0;
@@ -46,16 +46,22 @@ void read_sentence_lens(const char* file_path, WORDVECS* wordvecs, int n_batches
         fprintf(stderr, "Can't open input file %s!\n", file_path);
         exit(1);
     }
-    for (int batch=0; batch < n_batches; batch++) {
-        int fret = fscanf(fp, "%d\n", &len);
-         wordvecs[batch].lens[0] = len;
-        for (int i=1; (i<wordvecs[batch].b_size && fret != EOF); i++) {
-            fret = fscanf(fp, "%d\n", &len);
-            wordvecs[batch].lens[i] = wordvecs[batch].lens[i-1] + len;
+    int fret = 1;
+    for (int i=0; (i<n_sents && fret != EOF); i++) {
+        fret = fscanf(fp, "%d\n", &len);
+        if (len > 125) {
+            len = 125;
         }
+        sent_lens[i] = len;
     }
-    
     fclose(fp);
+}
+
+void init_lens(long* lens, int* sent_lens, int batch_size, int batch){
+    lens[0] = sent_lens[batch*batch_size];
+    for (int i=1; i < batch_size; i++) {
+        lens[i] = lens[i-1] + sent_lens[batch*batch_size + i];
+    }
 }
 
 void init_wordvecs(float* wordvecs, int dim, int total_words){
@@ -108,6 +114,7 @@ void print_mat(float* mat, int width,int height){
     }
     printf("])\n");
 }
+
 
 void conv1d(WORDVECS wordvec, KERNS kerns, OUTPUTS output){
     /*
@@ -189,6 +196,7 @@ void conv1d_kernel(WORDVECS wordvec, KERNS kerns, OUTPUTS output){
 
 
 int main(int argc, char* argv[]){
+
     if (argc != 7) {
         printf("USAGE: ./conv_1d.o <n_batches> <batch_size> <dim> <kern_w> <n_kerns> <device_id>");
         exit(1);
@@ -197,7 +205,6 @@ int main(int argc, char* argv[]){
     //Initilizing random numbers
     srand(20);
     
-    // Decalre structs
     KERNS kerns;
     
     //Parsing commandline args and initialize structs
@@ -210,104 +217,33 @@ int main(int argc, char* argv[]){
     int device_id = atoi(argv[6]);
     printf("n_batches=%d, batch_size=%d, dim=%d, kern_w=%d, kern_h=%d, n_kerns=%d\n", n_batches, batch_size, dim, kerns.width, kerns.height, kerns.num);
     
-    WORDVECS* wordvecs = (WORDVECS*) calloc(n_batches, sizeof(WORDVECS));
-    
-    //Allocate sentence lengths and read
-    for (int batch=0; batch < n_batches; batch++) {
-        wordvecs[batch].b_size = batch_size;
-        wordvecs[batch].dim = dim;
-        wordvecs[batch].lens = (long*) calloc(batch_size, sizeof(long));
-    }
-    
     // Read mini-batch sentence lengths
-    read_sentence_lens("sentence_lens.txt", wordvecs, n_batches);
-    
-    // Test sentence lens for a given mini-batch
-    int test_batch = 9, test_idx = 9;
-    if (DEBUG){
-        printf("i=%d, len=%ld \n", 0, wordvecs[test_batch].lens[0]);
-        for (int i=1; i < wordvecs[test_batch].b_size; i++) {
-            printf("i=%d, len=%ld \n", i, wordvecs[test_batch].lens[i] - wordvecs[test_batch].lens[i-1]);
-        }
-    }
-    
-    // Allocate word vectors and initialize
-    for (int batch=0; batch < n_batches; batch++) {
-        wordvecs[batch].w = (float*) calloc(wordvecs[batch].dim*wordvecs[batch].lens[batch_size-1], sizeof(float));
-        init_wordvecs(wordvecs[batch].w, wordvecs[batch].dim, wordvecs[batch].lens[batch_size-1]);
-    }
-    
-    //Testing initialization
-    if (DEBUG) {
-        printf("Input: \n");
-        if (test_idx == 0) {
-            print_mat(&(wordvecs[test_batch].w[0*dim]), wordvecs[test_batch].lens[test_idx], wordvecs[test_batch].dim);
-        } else {
-            print_mat(&(wordvecs[test_batch].w[wordvecs[test_batch].lens[test_idx-1]*dim]), wordvecs[test_batch].lens[test_idx]-wordvecs[test_batch].lens[test_idx-1], wordvecs[test_batch].dim);
-        }
-    }
-    
+    int* sent_lens = (int*) calloc(n_batches*batch_size, sizeof(int));
+    read_sentence_lens("sentence_lens.txt", sent_lens, n_batches*batch_size);
     
     //Allocate kernels and initilize
-    kerns.k = (float *) calloc(kerns.height*kerns.width*kerns.num, sizeof(float));
+    kerns.k = (float *)calloc(kerns.height*kerns.width*kerns.num, sizeof(float));
     init_kerns(kerns.k, kerns.num, kerns.width, kerns.height);
     
     // Test kernel initialization
     if (DEBUG) {
-        printf("CPU kernel values: \n");
         for (int i=0; i<kerns.num; i++) {
             printf("Kernel: %d\n", i);
             print_mat(&kerns.k[i*kerns.height*kerns.width], kerns.width, kerns.height);
             printf("\n\n");
         }
     }
+    
+    // Define test idxs
+    int test_batch = 9, test_idx = 9;
+    
+    WORDVECS wordvec;
+    OUTPUTS output;
 
-    
-    //Allocate and initialize outputs
-    OUTPUTS* outputs = (OUTPUTS*) calloc(batch_size, sizeof(OUTPUTS));
-    for (int batch=0; batch < n_batches; batch++) {
-        outputs[batch].b_size = batch_size;
-        outputs[batch].dim = kerns.num;
-        outputs[batch].lens = (long*) calloc(batch_size, sizeof(long));
-        init_out_lens(&(outputs[batch].lens), wordvecs[batch].lens, batch_size, kerns.width);
-    }
-    
-    // Test output lens for a given mini-batch
-    if (DEBUG) {
-        printf("i=%d, len=%ld, out_len=%ld \n", 0, wordvecs[test_batch].lens[0], outputs[test_batch].lens[0]);
-        for (int i=1; i < wordvecs[test_batch].b_size; i++) {
-            printf("i=%d, len=%ld, out_len=%ld \n", i, wordvecs[test_batch].lens[i] - wordvecs[test_batch].lens[i-1],  outputs[test_batch].lens[i]-outputs[test_batch].lens[i-1]);
-        }
-    }
-
-    
-    //Allocate outputs
-    for (int batch=0; batch < n_batches; batch++) {
-        outputs[batch].out = (float*) calloc(kerns.num*outputs[batch].lens[batch_size-1], sizeof(float));
-    }
-    
-    if (DEBUG) {
-        // CPU loop
-        for (int batch=0; batch < n_batches; batch++) {
-            conv1d(wordvecs[batch], kerns, outputs[batch]);
-        }
-        
-        //Testing computation
-        printf("CPU Output: \n");
-        if (test_idx == 0) {
-            print_mat(&(outputs[test_batch].out[0*kerns.num]), outputs[test_batch].lens[test_idx], kerns.num);
-        } else {
-            print_mat(&(outputs[test_batch].out[outputs[test_batch].lens[test_idx-1]*kerns.num]), outputs[test_batch].lens[test_idx]-outputs[test_batch].lens[test_idx-1], kerns.num);
-        }
-        
-        //Set back output results to zero.
-        for (int batch=0; batch < n_batches; batch++) {
-            memset(outputs[batch].out, 0, kerns.num*outputs[batch].lens[batch_size-1]*sizeof(float));
-        }
-    }
     
     //Select the device you want to run the code.
     cudaSetDevice(device_id);
+    printf("Using device: %d \n", device_id);
     
     // Allocate GPU WORDVEC, KERNS and OUTPUT. Planning to pass these structs by value.
     WORDVECS d_wordvec;
@@ -343,6 +279,66 @@ int main(int argc, char* argv[]){
     }
     
     for (int batch=0; batch < n_batches; batch++) {
+        wordvec.b_size = batch_size;
+        wordvec.dim = dim;
+        wordvec.lens = (long*) calloc(batch_size, sizeof(long));
+        
+        init_lens(wordvec.lens, sent_lens, batch_size, batch);
+        
+        // Test sentence lens for a given mini-batch
+        if (DEBUG && (test_batch == batch)) {
+            printf("i=%d, len=%d \n", 0, wordvec.lens[0]);
+            for (int i=1; i < wordvec.b_size; i++) {
+                printf("i=%d, len=%d \n", i, wordvec.lens[i] - wordvec.lens[i-1]);
+            }
+        }
+        
+        // Allocate word vectors and initialize
+        wordvec.w = (float*) calloc(wordvec.dim*wordvec.lens[batch_size-1], sizeof(float));
+        init_wordvecs(wordvec.w, wordvec.dim, wordvec.lens[batch_size-1]);
+        
+        
+        //Testing initialization
+        if (DEBUG && (test_batch == batch)) {
+            printf("Input: \n");
+            if (test_idx == 0) {
+                print_mat(&(wordvec.w[0*dim]), wordvec.lens[test_idx], wordvec.dim);
+            } else {
+                print_mat(&(wordvec.w[wordvec.lens[test_idx-1]*dim]), wordvec.lens[test_idx]-wordvec.lens[test_idx-1], wordvec.dim);
+            }
+        }
+        
+        //Allocate and initialize outputs
+        output.b_size = batch_size;
+        output.dim = kerns.num;
+        output.lens = (long*) calloc(batch_size, sizeof(long));
+        init_out_lens(&(output.lens), wordvec.lens, batch_size, kerns.width);
+        
+        // Test output lens for a given mini-batch
+        if (DEBUG && test_batch == batch) {
+            printf("i=%d, len=%d, out_len=%d \n", 0, wordvec.lens[0], output.lens[0]);
+            for (int i=1; i < wordvec.b_size; i++) {
+                printf("i=%d, len=%d, out_len=%d \n", i, wordvec.lens[i] - wordvec.lens[i-1],  output.lens[i]-output.lens[i-1]);
+            }
+        }
+        
+        //Allocate outputs
+        output.out = (float*) calloc(kerns.num*output.lens[batch_size-1], sizeof(float));
+        
+        //Run on CPU and test output
+        if (DEBUG && test_batch == batch) {
+            conv1d_kernel(wordvec, kerns, output);
+            
+            printf("Output: \n");
+            if (test_idx == 0) {
+                print_mat(&(output.out[0*kerns.num]), output.lens[test_idx], kerns.num);
+            } else {
+                print_mat(&(output.out[output.lens[test_idx-1]*kerns.num]), output.lens[test_idx]-output
+                          .lens[test_idx-1], kerns.num);
+            }
+        }
+
+        
         // Allocate and initialize wordvecs.w and wordvecs.lens on GPU
         d_wordvec.dim = dim;
         d_wordvec.b_size = batch_size;
@@ -356,7 +352,7 @@ int main(int argc, char* argv[]){
         if (err != cudaSuccess)
             printf("***ERROR***: %s\n", cudaGetErrorString(err));
         
-        cudaMemcpy(d_wlens, wordvecs[batch].lens, sizeof(long)*batch_size, cudaMemcpyHostToDevice);
+        cudaMemcpy(d_wlens, wordvec.lens, sizeof(long)*batch_size, cudaMemcpyHostToDevice);
         if (DEBUG) {
             printf("Done transfering wordvecs[batch].lens -> d_wlens \n");
         }
@@ -367,7 +363,7 @@ int main(int argc, char* argv[]){
             printf("***ERROR***: %s\n", cudaGetErrorString(err));
         
         float* d_w;
-        cudaMalloc((void **) &(d_w), sizeof(float)*dim*wordvecs[batch].lens[batch_size-1]);
+        cudaMalloc((void **) &(d_w), sizeof(float)*dim*wordvec.lens[batch_size-1]);
         if (DEBUG) {
             printf("Done allocating d_w \n");
         }
@@ -376,7 +372,7 @@ int main(int argc, char* argv[]){
         if (err != cudaSuccess)
             printf("***ERROR***: %s\n", cudaGetErrorString(err));
         
-        cudaMemcpy(d_w, wordvecs[batch].w, sizeof(float)*dim*wordvecs[batch].lens[batch_size-1], cudaMemcpyHostToDevice);
+        cudaMemcpy(d_w, wordvec.w, sizeof(float)*dim*wordvec.lens[batch_size-1], cudaMemcpyHostToDevice);
         if (DEBUG) {
             printf("Done transfering wordvecs[batch].w -> d_w \n");
         }
@@ -399,7 +395,7 @@ int main(int argc, char* argv[]){
         if (err != cudaSuccess)
             printf("***ERROR***: %s\n", cudaGetErrorString(err));
         
-        cudaMemcpy(d_olens, outputs[batch].lens, sizeof(long)*batch_size, cudaMemcpyHostToDevice);
+        cudaMemcpy(d_olens, output.lens, sizeof(long)*batch_size, cudaMemcpyHostToDevice);
         if (DEBUG) {
             printf("Done transfering wordvecs[batch].lens -> d_olens \n");
         }
@@ -410,7 +406,7 @@ int main(int argc, char* argv[]){
             printf("***ERROR***: %s\n", cudaGetErrorString(err));
         
         float* d_out;
-        cudaMalloc((void **) &(d_out), sizeof(float)*kerns.num*outputs[batch].lens[batch_size-1]);
+        cudaMalloc((void **) &(d_out), sizeof(float)*kerns.num*output.lens[batch_size-1]);
         if (DEBUG) {
             printf("Done allocating d_out \n");
         }
@@ -419,7 +415,7 @@ int main(int argc, char* argv[]){
         if (err != cudaSuccess)
             printf("***ERROR***: %s\n", cudaGetErrorString(err));
         
-        cudaMemcpy(d_out, outputs[batch].out, sizeof(float)*kerns.num*outputs[batch].lens[batch_size-1], cudaMemcpyHostToDevice);
+        cudaMemcpy(d_out, output.out, sizeof(float)*kerns.num*output.lens[batch_size-1], cudaMemcpyHostToDevice);
         if (DEBUG) {
             printf("Done transfering outputs[batch].out -> d_out \n");
         }
@@ -441,7 +437,7 @@ int main(int argc, char* argv[]){
         }
         
         // Get output results back
-        cudaMemcpy(outputs[batch].out, d_out, sizeof(float)*kerns.num*outputs[batch].lens[batch_size-1], cudaMemcpyDeviceToHost);
+        cudaMemcpy(output.out, d_out, sizeof(float)*kerns.num*outputs[batch].lens[batch_size-1], cudaMemcpyDeviceToHost);
         if (DEBUG) {
             printf("Done transfering d_out -> outputs[batch].out \n");
         }
@@ -455,9 +451,9 @@ int main(int argc, char* argv[]){
             if (batch == test_batch) {
                 printf("GPU Output: \n");
                 if (test_idx == 0) {
-                    print_mat(&(outputs[test_batch].out[0*kerns.num]), outputs[test_batch].lens[test_idx], kerns.num);
+                    print_mat(&(output.out[0*kerns.num]), output.lens[test_idx], kerns.num);
                 } else {
-                    print_mat(&(outputs[test_batch].out[outputs[test_batch].lens[test_idx-1]*kerns.num]), outputs[test_batch].lens[test_idx]-outputs[test_batch].lens[test_idx-1], kerns.num);
+                    print_mat(&(output.out[output.lens[test_idx-1]*kerns.num]), output.lens[test_idx]-output.lens[test_idx-1], kerns.num);
                 }
             }
         }
@@ -467,18 +463,16 @@ int main(int argc, char* argv[]){
         cudaFree(d_w);
         cudaFree(d_olens);
         cudaFree(d_out);
+        
+        // Free all allocated resources.
+        free(wordvec.w);
+        free(wordvec.lens);
+        free(output.out);
+        free(output.lens);
     }
     
     //Free all GPU allocated resources.
     cudaFree(d_k);
-    
-    //Free all host allocated resources
-    for (int batch=0; batch < n_batches; batch++) {
-        free(wordvecs[batch].w);
-        free(wordvecs[batch].lens);
-        free(outputs[batch].out);
-        free(outputs[batch].lens);
-    }
-    free(wordvecs);
-    free(outputs);
+    free(kerns.k);
+    free(sent_lens);
 }
