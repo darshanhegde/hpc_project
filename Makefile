@@ -7,12 +7,12 @@ conv_1d.o: conv_1d.c
 	gcc -std=c99 conv_1d.c -o conv_1d.o
 	
 test_cpu: conv_1d.o
-	./conv_1d.o 10 10 3 7 5
+	./conv_1d.o 10 10 3 5 2
 	
 test_gpu:
 	git pull
 	nvcc -o conv_1d_gpu.o conv_1d_gpu.cu
-	./conv_1d_gpu.o 10 10 3 7 5 ${DEVICE}
+	./conv_1d_gpu.o 10 10 3 5 2 ${DEVICE}
 	
 sync: Makefile conv_1d_gpu.cu
 	git add Makefile conv_1d_gpu.cu
