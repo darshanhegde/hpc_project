@@ -8,6 +8,8 @@
 #include <assert.h>
 #include <cuda.h>
 
+#include "util.h"
+
 #define MIN(a,b) ((a<b)?a:b)
 #define MAX(a,b) ((a>b)?a:b)
 
@@ -278,6 +280,8 @@ int main(int argc, char* argv[]){
         }
     }
     
+    timestamp_type time1, time2;
+    get_timestamp(&time1);
     for (int batch=0; batch < n_batches; batch++) {
         wordvec.b_size = batch_size;
         wordvec.dim = dim;
@@ -472,6 +476,10 @@ int main(int argc, char* argv[]){
         free(output.out);
         free(output.lens);
     }
+    
+    get_timestamp(&time2);
+    double elapsed = timestamp_diff_in_seconds(time1,time2);
+    printf("Time elapsed is %f seconds.\n", elapsed);
     
     //Free all GPU allocated resources.
     cudaFree(d_k);

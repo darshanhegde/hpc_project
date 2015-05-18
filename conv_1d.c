@@ -6,6 +6,8 @@
 #include <time.h>
 #include <limits.h>
 
+#include "util.h"
+
 #define MIN(a,b) ((a<b)?a:b)
 #define MAX(a,b) ((a>b)?a:b)
 
@@ -189,6 +191,9 @@ int main(int argc, char* argv[]){
     // Define test idxs
     int test_batch = 9, test_idx = 9;
     
+    timestamp_type time1, time2;
+    get_timestamp(&time1);
+    
     WORDVECS wordvec;
     OUTPUTS output;
     //Allocate sentence lengths and read
@@ -258,6 +263,10 @@ int main(int argc, char* argv[]){
         free(output.out);
         free(output.lens);
     }
+    
+    get_timestamp(&time2);
+    double elapsed = timestamp_diff_in_seconds(time1,time2);
+    printf("Time elapsed is %f seconds.\n", elapsed);
     
     free(kerns.k);
     free(sent_lens);
