@@ -280,7 +280,7 @@ int main(int argc, char* argv[]){
     
     //Set back output results to zero.
     for (int batch=0; batch < n_batches; batch++) {
-        memset(outputs[batch].out, kerns.num*outputs[batch].lens[batch_size-1], sizeof(float));
+        memset(outputs[batch].out, 0, kerns.num*outputs[batch].lens[batch_size-1]*sizeof(float));
     }
     
     //Select the device you want to run the code.
