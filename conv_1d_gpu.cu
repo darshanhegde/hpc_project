@@ -278,6 +278,11 @@ int main(int argc, char* argv[]){
         print_mat(&(outputs[test_batch].out[outputs[test_batch].lens[test_idx-1]*kerns.num]), outputs[test_batch].lens[test_idx]-outputs[test_batch].lens[test_idx-1], kerns.num);
     }
     
+    //Set back output results to zero.
+    for (int batch=0; batch < n_batches; batch++) {
+        memset(outputs[batch].out, kerns.num*outputs[batch].lens[batch_size-1], sizeof(float));
+    }
+    
     //Select the device you want to run the code.
     cudaSetDevice(device_id);
     
