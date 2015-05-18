@@ -373,12 +373,11 @@ int main(int argc, char* argv[]){
     
     conv1d_kernel<<<batch_size, dim, dim*sizeof(float)>>>(d_wordvec, d_kerns, d_output);
     
-    {
-    (cudaError_t cudaerr = cudaDeviceSynchronize();
-     if (cudaerr != CUDA_SUCCESS)
-     printf("kernel launch failed with error \"%s\".\n",
+    cudaError_t cudaerr = cudaDeviceSynchronize();
+    if (cudaerr != CUDA_SUCCESS)
+        printf("kernel launch failed with error \"%s\".\n",
             cudaGetErrorString(cudaerr));
-    }
+    
     
     // Get output results back
     cudaMemcpy(outputs[test_batch].out, d_out, sizeof(float)*kerns.num*outputs[test_batch].lens[batch_size-1], cudaMemcpyDeviceToHost);
