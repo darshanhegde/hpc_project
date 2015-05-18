@@ -25,7 +25,7 @@ test_theano_cpu:
 
 test_theano_gpu:
 	git pull
-	THEANO_FLAGS=mode=FAST_RUN,device=${DEVICE},floatX=float32 python theano_benchmark.py --n_batches ${N_BATCHES} --batch_size ${BATCH_SIZE} --dim ${DIM} --kern_w ${KERN_W} --n_kerns ${N_KERNS}
+	THEANO_FLAGS=mode=FAST_RUN,device=gpu${DEVICE},floatX=float32 python theano_benchmark.py --n_batches ${N_BATCHES} --batch_size ${BATCH_SIZE} --dim ${DIM} --kern_w ${KERN_W} --n_kerns ${N_KERNS}
 
 sync: Makefile conv_1d_gpu.cu
 	git add Makefile conv_1d_gpu.cu conv_1d.c theano_benchmark.py
