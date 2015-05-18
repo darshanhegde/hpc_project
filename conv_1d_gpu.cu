@@ -323,9 +323,6 @@ int main(int argc, char* argv[]){
         print_mat(&kerns.k[i*kerns.height*kerns.width], kerns.width, kerns.height);
         printf("\n\n");
     }
-
-    // GPU just on the test batch
-    conv1d_kernel<<<dim, batch_size>>>(d_wordvec, d_kerns, d_output);
     
     // Allocate and initialize wordvecs.w and wordvecs.lens on GPU
     d_wordvec.dim = dim;
