@@ -271,7 +271,7 @@ int main(int argc, char* argv[]){
     }
     
     //Testing computation
-    printf("Output: \n");
+    printf("CPU Output: \n");
     if (test_idx == 0) {
         print_mat(&(outputs[test_batch].out[0*kerns.num]), outputs[test_batch].lens[test_idx], kerns.num);
     } else {
@@ -345,8 +345,24 @@ int main(int argc, char* argv[]){
     printf("Done allocating d_out \n");
     
     cudaMemcpy(d_out, outputs[test_batch].out, sizeof(float)*kerns.num*outputs[test_batch].lens[batch_size-1], cudaMemcpyHostToDevice);
-    printf("Done transfering wordvecs[test_batch].w -> d_w \n");
+    printf("Done transfering outputs[test_batch].out -> d_out \n");
     d_output.out = d_out;
+    
+    // Launch the kernel
+    
+    
+    
+    // Get output results back
+    cudaMemcpy(outputs[test_batch].out, d_out, sizeof(float)*kerns.num*outputs[test_batch].lens[batch_size-1], cudaMemcpyDeviceToHost);
+    printf("Done transfering d_out -> outputs[test_batch].out \n");
+    
+    // Verify GPU Results
+    printf("GPU Output: \n");
+    if (test_idx == 0) {
+        print_mat(&(outputs[test_batch].out[0*kerns.num]), outputs[test_batch].lens[test_idx], kerns.num);
+    } else {
+        print_mat(&(outputs[test_batch].out[outputs[test_batch].lens[test_idx-1]*kerns.num]), outputs[test_batch].lens[test_idx]-outputs[test_batch].lens[test_idx-1], kerns.num);
+    }
     
     
     // Free GPU allocations for mini-batch
