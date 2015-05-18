@@ -323,104 +323,105 @@ int main(int argc, char* argv[]){
         printf("\n\n");
     }
     
-    // Allocate and initialize wordvecs.w and wordvecs.lens on GPU
-    d_wordvec.dim = dim;
-    d_wordvec.b_size = batch_size;
-    long* d_wlens;
-    cudaMalloc((void **) &(d_wlens), sizeof(long)*batch_size);
-    printf("Done allocating d_wlens \n");
-    
-    cudaError_t err = cudaGetLastError();
-    if (err != cudaSuccess)
-        printf("***ERROR***: %s\n", cudaGetErrorString(err));
-    
-    cudaMemcpy(d_wlens, wordvecs[test_batch].lens, sizeof(long)*batch_size, cudaMemcpyHostToDevice);
-    printf("Done transfering wordvecs[test_batch].lens -> d_wlens \n");
-    d_wordvec.lens = d_wlens;
-    
-    err = cudaGetLastError();
-    if (err != cudaSuccess)
-        printf("***ERROR***: %s\n", cudaGetErrorString(err));
-    
-    float* d_w;
-    cudaMalloc((void **) &(d_w), sizeof(float)*dim*wordvecs[test_batch].lens[batch_size-1]);
-    printf("Done allocating d_w \n");
-    
-    err = cudaGetLastError();
-    if (err != cudaSuccess)
-        printf("***ERROR***: %s\n", cudaGetErrorString(err));
-    
-    cudaMemcpy(d_w, wordvecs[test_batch].w, sizeof(float)*dim*wordvecs[test_batch].lens[batch_size-1], cudaMemcpyHostToDevice);
-    printf("Done transfering wordvecs[test_batch].w -> d_w \n");
-    d_wordvec.w = d_w;
-    
-    err = cudaGetLastError();
-    if (err != cudaSuccess)
-        printf("***ERROR***: %s\n", cudaGetErrorString(err));
-    
-    // Allocate and initialize outputs.out and outputs.lens on GPU
-    d_output.dim = kerns.num;
-    d_output.b_size = batch_size;
-    long* d_olens;
-    cudaMalloc((void **) &(d_olens), sizeof(long)*batch_size);
-    printf("Done allocating d_olens \n");
-    
-    err = cudaGetLastError();
-    if (err != cudaSuccess)
-        printf("***ERROR***: %s\n", cudaGetErrorString(err));
-    
-    cudaMemcpy(d_olens, outputs[test_batch].lens, sizeof(long)*batch_size, cudaMemcpyHostToDevice);
-    printf("Done transfering wordvecs[test_batch].lens -> d_olens \n");
-    d_output.lens = d_olens;
-    
-    err = cudaGetLastError();
-    if (err != cudaSuccess)
-        printf("***ERROR***: %s\n", cudaGetErrorString(err));
-    
-    float* d_out;
-    cudaMalloc((void **) &(d_out), sizeof(float)*kerns.num*outputs[test_batch].lens[batch_size-1]);
-    printf("Done allocating d_out \n");
-    
-    err = cudaGetLastError();
-    if (err != cudaSuccess)
-        printf("***ERROR***: %s\n", cudaGetErrorString(err));
-    
-    cudaMemcpy(d_out, outputs[test_batch].out, sizeof(float)*kerns.num*outputs[test_batch].lens[batch_size-1], cudaMemcpyHostToDevice);
-    printf("Done transfering outputs[test_batch].out -> d_out \n");
-    d_output.out = d_out;
-    
-    err = cudaGetLastError();
-    if (err != cudaSuccess)
-        printf("***ERROR***: %s\n", cudaGetErrorString(err));
-    
-    // Launch the kernel
-    
-    conv1d_kernel<<<batch_size, dim, sizeof(float)*dim>>>(d_wordvec, d_kerns, d_output);
-    
-    err = cudaGetLastError();
-    if (err != cudaSuccess)
-        printf("***ERROR***: %s\n", cudaGetErrorString(err));
-    
-    printf("Done launching the kernel. \n");
-    
-    
-    // Get output results back
-    cudaMemcpy(outputs[test_batch].out, d_out, sizeof(float)*kerns.num*outputs[test_batch].lens[batch_size-1], cudaMemcpyDeviceToHost);
-    printf("Done transfering d_out -> outputs[test_batch].out \n");
-    
-    err = cudaGetLastError();
-    if (err != cudaSuccess)
-        printf("***ERROR***: %s\n", cudaGetErrorString(err));
-    
-    // Verify GPU Results
-    printf("GPU Output: \n");
-    if (test_idx == 0) {
-        print_mat(&(outputs[test_batch].out[0*kerns.num]), outputs[test_batch].lens[test_idx], kerns.num);
-    } else {
-        print_mat(&(outputs[test_batch].out[outputs[test_batch].lens[test_idx-1]*kerns.num]), outputs[test_batch].lens[test_idx]-outputs[test_batch].lens[test_idx-1], kerns.num);
+    for (int batch=0; batch < n_batches; batch++) {
+        // Allocate and initialize wordvecs.w and wordvecs.lens on GPU
+        d_wordvec.dim = dim;
+        d_wordvec.b_size = batch_size;
+        long* d_wlens;
+        cudaMalloc((void **) &(d_wlens), sizeof(long)*batch_size);
+        printf("Done allocating d_wlens \n");
+        
+        cudaError_t err = cudaGetLastError();
+        if (err != cudaSuccess)
+            printf("***ERROR***: %s\n", cudaGetErrorString(err));
+        
+        cudaMemcpy(d_wlens, wordvecs[batch].lens, sizeof(long)*batch_size, cudaMemcpyHostToDevice);
+        printf("Done transfering wordvecs[batch].lens -> d_wlens \n");
+        d_wordvec.lens = d_wlens;
+        
+        err = cudaGetLastError();
+        if (err != cudaSuccess)
+            printf("***ERROR***: %s\n", cudaGetErrorString(err));
+        
+        float* d_w;
+        cudaMalloc((void **) &(d_w), sizeof(float)*dim*wordvecs[batch].lens[batch_size-1]);
+        printf("Done allocating d_w \n");
+        
+        err = cudaGetLastError();
+        if (err != cudaSuccess)
+            printf("***ERROR***: %s\n", cudaGetErrorString(err));
+        
+        cudaMemcpy(d_w, wordvecs[batch].w, sizeof(float)*dim*wordvecs[batch].lens[batch_size-1], cudaMemcpyHostToDevice);
+        printf("Done transfering wordvecs[batch].w -> d_w \n");
+        d_wordvec.w = d_w;
+        
+        err = cudaGetLastError();
+        if (err != cudaSuccess)
+            printf("***ERROR***: %s\n", cudaGetErrorString(err));
+        
+        // Allocate and initialize outputs.out and outputs.lens on GPU
+        d_output.dim = kerns.num;
+        d_output.b_size = batch_size;
+        long* d_olens;
+        cudaMalloc((void **) &(d_olens), sizeof(long)*batch_size);
+        printf("Done allocating d_olens \n");
+        
+        err = cudaGetLastError();
+        if (err != cudaSuccess)
+            printf("***ERROR***: %s\n", cudaGetErrorString(err));
+        
+        cudaMemcpy(d_olens, outputs[batch].lens, sizeof(long)*batch_size, cudaMemcpyHostToDevice);
+        printf("Done transfering wordvecs[batch].lens -> d_olens \n");
+        d_output.lens = d_olens;
+        
+        err = cudaGetLastError();
+        if (err != cudaSuccess)
+            printf("***ERROR***: %s\n", cudaGetErrorString(err));
+        
+        float* d_out;
+        cudaMalloc((void **) &(d_out), sizeof(float)*kerns.num*outputs[batch].lens[batch_size-1]);
+        printf("Done allocating d_out \n");
+        
+        err = cudaGetLastError();
+        if (err != cudaSuccess)
+            printf("***ERROR***: %s\n", cudaGetErrorString(err));
+        
+        cudaMemcpy(d_out, outputs[batch].out, sizeof(float)*kerns.num*outputs[batch].lens[batch_size-1], cudaMemcpyHostToDevice);
+        printf("Done transfering outputs[batch].out -> d_out \n");
+        d_output.out = d_out;
+        
+        err = cudaGetLastError();
+        if (err != cudaSuccess)
+            printf("***ERROR***: %s\n", cudaGetErrorString(err));
+        
+        // Launch the kernel
+        
+        conv1d_kernel<<<batch_size, dim, sizeof(float)*dim>>>(d_wordvec, d_kerns, d_output);
+        
+        err = cudaGetLastError();
+        if (err != cudaSuccess)
+            printf("***ERROR***: %s\n", cudaGetErrorString(err));
+        
+        printf("Done launching the kernel. \n");
+        
+        
+        // Get output results back
+        cudaMemcpy(outputs[batch].out, d_out, sizeof(float)*kerns.num*outputs[batch].lens[batch_size-1], cudaMemcpyDeviceToHost);
+        printf("Done transfering d_out -> outputs[batch].out \n");
+        
+        err = cudaGetLastError();
+        if (err != cudaSuccess)
+            printf("***ERROR***: %s\n", cudaGetErrorString(err));
+        
+        // Verify GPU Results
+        printf("GPU Output: \n");
+        if (test_idx == 0) {
+            print_mat(&(outputs[test_batch].out[0*kerns.num]), outputs[test_batch].lens[test_idx], kerns.num);
+        } else {
+            print_mat(&(outputs[test_batch].out[outputs[test_batch].lens[test_idx-1]*kerns.num]), outputs[test_batch].lens[test_idx]-outputs[test_batch].lens[test_idx-1], kerns.num);
+        }
     }
-    
-    
+
     // Free GPU allocations for mini-batch
     cudaFree(d_wlens);
     cudaFree(d_w);
