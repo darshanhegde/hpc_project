@@ -340,21 +340,21 @@ int main(int argc, char* argv[]){
     
     cudaError_t err = cudaGetLastError();
     if (err != cudaSuccess)
-        printf("Error: %s\n", cudaGetErrorString(err));
+        printf("Error <<< launch >>>: %s\n", cudaGetErrorString(err));
     
     cudaMemcpy(d_wlens, wordvecs[test_batch].lens, sizeof(long)*batch_size, cudaMemcpyHostToDevice);
     printf("Done transfering wordvecs[test_batch].lens -> d_wlens \n");
     d_wordvec.lens = d_wlens;
     
-    cudaError_t err = cudaGetLastError();
+    err = cudaGetLastError();
     if (err != cudaSuccess)
-        printf("Error : %s\n", cudaGetErrorString(err));
+        printf("Error <<< launch >>>: %s\n", cudaGetErrorString(err));
     
     float* d_w;
     cudaMalloc((void **) &(d_w), sizeof(float)*dim*wordvecs[test_batch].lens[batch_size-1]);
     printf("Done allocating d_w \n");
     
-    cudaError_t err = cudaGetLastError();
+    err = cudaGetLastError();
     if (err != cudaSuccess)
         printf("Error <<< launch >>>: %s\n", cudaGetErrorString(err));
     
@@ -362,7 +362,7 @@ int main(int argc, char* argv[]){
     printf("Done transfering wordvecs[test_batch].w -> d_w \n");
     d_wordvec.w = d_w;
     
-    cudaError_t err = cudaGetLastError();
+    err = cudaGetLastError();
     if (err != cudaSuccess)
         printf("Error <<< launch >>>: %s\n", cudaGetErrorString(err));
     
@@ -373,7 +373,7 @@ int main(int argc, char* argv[]){
     cudaMalloc((void **) &(d_olens), sizeof(long));
     printf("Done allocating d_olens \n");
     
-    cudaError_t err = cudaGetLastError();
+    err = cudaGetLastError();
     if (err != cudaSuccess)
         printf("Error <<< launch >>>: %s\n", cudaGetErrorString(err));
     
@@ -381,7 +381,7 @@ int main(int argc, char* argv[]){
     printf("Done transfering wordvecs[test_batch].lens -> d_olens \n");
     d_output.lens = d_olens;
     
-    cudaError_t err = cudaGetLastError();
+    err = cudaGetLastError();
     if (err != cudaSuccess)
         printf("Error <<< launch >>>: %s\n", cudaGetErrorString(err));
     
@@ -389,7 +389,7 @@ int main(int argc, char* argv[]){
     cudaMalloc((void **) &(d_out), sizeof(float)*kerns.num*outputs[test_batch].lens[batch_size-1]);
     printf("Done allocating d_out \n");
     
-    cudaError_t err = cudaGetLastError();
+    err = cudaGetLastError();
     if (err != cudaSuccess)
         printf("Error <<< launch >>>: %s\n", cudaGetErrorString(err));
     
@@ -397,7 +397,7 @@ int main(int argc, char* argv[]){
     printf("Done transfering outputs[test_batch].out -> d_out \n");
     d_output.out = d_out;
     
-    cudaError_t err = cudaGetLastError();
+    err = cudaGetLastError();
     if (err != cudaSuccess)
         printf("Error <<< launch >>>: %s\n", cudaGetErrorString(err));
     
@@ -405,7 +405,7 @@ int main(int argc, char* argv[]){
     
     conv1d_kernel<<<10, 32>>>();
     
-    cudaError_t err = cudaGetLastError();
+    err = cudaGetLastError();
     if (err != cudaSuccess)
         printf("Error <<< launch >>>: %s\n", cudaGetErrorString(err));
     
@@ -414,7 +414,7 @@ int main(int argc, char* argv[]){
     cudaMemcpy(outputs[test_batch].out, d_out, sizeof(float)*kerns.num*outputs[test_batch].lens[batch_size-1], cudaMemcpyDeviceToHost);
     printf("Done transfering d_out -> outputs[test_batch].out \n");
     
-    cudaError_t err = cudaGetLastError();
+    err = cudaGetLastError();
     if (err != cudaSuccess)
         printf("Error <<< launch >>>: %s\n", cudaGetErrorString(err));
     
