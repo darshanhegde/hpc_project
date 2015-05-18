@@ -327,7 +327,7 @@ int main(int argc, char* argv[]){
         
         //Run on CPU and test output
         if (DEBUG && test_batch == batch) {
-            conv1d_kernel(wordvec, kerns, output);
+            conv1d(wordvec, kerns, output);
             
             printf("Output: \n");
             if (test_idx == 0) {
@@ -437,7 +437,7 @@ int main(int argc, char* argv[]){
         }
         
         // Get output results back
-        cudaMemcpy(output.out, d_out, sizeof(float)*kerns.num*outputs[batch].lens[batch_size-1], cudaMemcpyDeviceToHost);
+        cudaMemcpy(output.out, d_out, sizeof(float)*kerns.num*output.lens[batch_size-1], cudaMemcpyDeviceToHost);
         if (DEBUG) {
             printf("Done transfering d_out -> outputs[batch].out \n");
         }
