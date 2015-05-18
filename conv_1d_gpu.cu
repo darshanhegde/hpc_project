@@ -153,43 +153,43 @@ void conv1d_kernel(WORDVECS wordvec, KERNS kerns, OUTPUTS output){
     printf("Reporting tIdx=%d, bIdx=%d\n", tIdx, bIdx);
     __syncthreads();
     
-    long len, out_len;
-    float* wv;
-    float* out;
-    int dim = wordvec.dim, out_dim=kerns.num;
-    
-    assert(blockDim.x == dim);
-    
-    extern __shared__ float s[];
-    
-    if (bIdx == 0) {
-        len = wordvec.lens[bIdx];
-        out_len = output.lens[bIdx];
-        wv = &wordvec.w[dim*0];
-        out = &output.out[out_dim*0];
-    } else {
-        len = wordvec.lens[bIdx] - wordvec.lens[bIdx-1];
-        out_len = output.lens[bIdx] - output.lens[bIdx-1];
-        wv = &wordvec.w[dim*wordvec.lens[bIdx-1]];
-        out = &output.out[out_dim*output.lens[bIdx-1]];
-    }
-    
-    
-    __syncthreads();
-    
-    for (int i=0; i < out_len; i++) {
-        for (int k=0; k < kerns.num; k++) {
-            s[tIdx] = 0.;
-            for (int j = MAX(0, i-kerns.width+1); j <= MIN(i, len-1); j++) {
-                int k_sub=(kerns.width-1-i+j);
-                s[tIdx] += (wv[j*dim+tIdx] * kerns.k[k*kerns.width*kerns.height + k_sub*kerns.height + tIdx]);
-            }
-            atomicAdd(&out[i*kerns.num+k], 1);
-            out[i*kerns.num+k] = 1.;
-            __syncthreads();
-        }
-    }
-    __syncthreads();
+//    long len, out_len;
+//    float* wv;
+//    float* out;
+//    int dim = wordvec.dim, out_dim=kerns.num;
+//    
+//    assert(blockDim.x == dim);
+//    
+//    extern __shared__ float s[];
+//    
+//    if (bIdx == 0) {
+//        len = wordvec.lens[bIdx];
+//        out_len = output.lens[bIdx];
+//        wv = &wordvec.w[dim*0];
+//        out = &output.out[out_dim*0];
+//    } else {
+//        len = wordvec.lens[bIdx] - wordvec.lens[bIdx-1];
+//        out_len = output.lens[bIdx] - output.lens[bIdx-1];
+//        wv = &wordvec.w[dim*wordvec.lens[bIdx-1]];
+//        out = &output.out[out_dim*output.lens[bIdx-1]];
+//    }
+//    
+//    
+//    __syncthreads();
+//    
+//    for (int i=0; i < out_len; i++) {
+//        for (int k=0; k < kerns.num; k++) {
+//            s[tIdx] = 0.;
+//            for (int j = MAX(0, i-kerns.width+1); j <= MIN(i, len-1); j++) {
+//                int k_sub=(kerns.width-1-i+j);
+//                s[tIdx] += (wv[j*dim+tIdx] * kerns.k[k*kerns.width*kerns.height + k_sub*kerns.height + tIdx]);
+//            }
+//            atomicAdd(&out[i*kerns.num+k], 1);
+//            out[i*kerns.num+k] = 1.;
+//            __syncthreads();
+//        }
+//    }
+//    __syncthreads();
 }
 
 
