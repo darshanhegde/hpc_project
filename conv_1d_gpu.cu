@@ -373,6 +373,10 @@ int main(int argc, char* argv[]){
     
     conv1d_kernel<<<batch_size, dim>>>(d_wordvec, d_kerns, d_output);
     
+    cudaError_t err = cudaGetLastError();
+    if (err != cudaSuccess)
+        printf("Error: %s\n", cudaGetErrorString(err));
+    
     
     // Get output results back
     cudaMemcpy(outputs[test_batch].out, d_out, sizeof(float)*kerns.num*outputs[test_batch].lens[batch_size-1], cudaMemcpyDeviceToHost);
