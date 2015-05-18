@@ -171,6 +171,9 @@ void conv1d_kernel(WORDVECS wordvec, KERNS kerns, OUTPUTS output){
     }
     
     __syncthreads();
+    printf("tIdx=%d, bIdx=%d\n", tIdx, bIdx);
+    __syncthreads();
+    
     for (int i=0; i < out_len; i++) {
         for (int k=0; k < kerns.num; k++) {
             s[tIdx] = 0.;
@@ -365,6 +368,7 @@ int main(int argc, char* argv[]){
     // Launch the kernel
     
     conv1d_kernel<<<dim, batch_size, dim*sizeof(float)>>>(d_wordvec, d_kerns, d_output);
+    cudaDeviceSynchronize();
     
     // Get output results back
     cudaMemcpy(outputs[test_batch].out, d_out, sizeof(float)*kerns.num*outputs[test_batch].lens[batch_size-1], cudaMemcpyDeviceToHost);
