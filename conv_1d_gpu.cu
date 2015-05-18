@@ -337,7 +337,7 @@ int main(int argc, char* argv[]){
                           .lens[test_idx-1], kerns.num);
             }
             
-            memset((void *)&(output.out), 0, sizeof(float)*kerns.num*output.lens[batch_size-1]);
+            memset((void *)output.out, 0, sizeof(float)*kerns.num*output.lens[batch_size-1]);
         }
 
         
