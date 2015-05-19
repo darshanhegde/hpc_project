@@ -198,7 +198,7 @@ void conv1d_kernel(WORDVECS wordvec, KERNS kerns, OUTPUTS output){
 //            
 //            if (tIdx == 0) {
 //                out[i*kerns.num+k] = sdata[0];
-            }
+//            }
             atomicAdd(&out[i*kerns.num+k], sdata[tIdx]);
             __syncthreads();
         }
