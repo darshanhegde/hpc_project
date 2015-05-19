@@ -87,7 +87,7 @@ For comparing the performance we use the similar set of parameters used in the $
 We use sentence lengths from Trip Advisor Dataset and initialize inputs and kernels randomly for all experiments. We use dimension=100, convolution kernel width=7, mini-batch size=200, number of kernels=64 and batch size=100 held fixed and change the parameter of interest. 
 Fig \ref{fig:minibatch} shows the performance of our implementation compared to Theano's implementation with zero padding as we vary mini-batch size parameter. As seen from Fig \ref{fig:minibatch} as we increase the size of the mini-batch, speed up due to our implementation goes up as number of zero-padding increases and thus the amount of not useful computation in Theano's implementation. We want to use larger mini-batches so that convergence of training is smoother. Researcher typically use a mini-batch size of $[100, 500]$, in case of larger mini-batch size $500$ we get upto \textbf{2.6x} speedup. As Fig \ref{fig:n_kerns} and Fig \ref{fig:w_kerns} performance is quite robust to number of kernels and width of kernels. An example of optimization done by Theano is shown in Fig \ref{fig:w_kerns} for width of the kernel = 9. For larger kernel size's Theano's implementation does some optimization to make it run faster. However, typical size of the kernels used by Denil et. al. \cite{Denil2014c} is $\{5, 7\}$ and Computer Vision Researchers have found that smaller kernel sizes and deeper networks work much better. 
 
-Finally, The kernel achieves CGMA (Compute to Global Memory Access ratio ) of $\approx 7.2$.  
+Finally, The kernel achieves CGMA (Compute to Global Memory Access ratio ) of $\approx 30.12$.  
 
  \begin{figure}[!htbp]
 \begin{center}
