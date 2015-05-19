@@ -3,7 +3,7 @@ N_BATCHES=2000
 BATCH_SIZE=200
 DIM=100
 KERN_W=5
-N_KERNS=8
+N_KERNS=16
 
 EXECS:conv_1d.o conv_1d_gpu.o
 
