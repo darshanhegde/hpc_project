@@ -14,7 +14,7 @@ def read_sentence_lens(sentence_lens_path):
         length = int(str_len.strip())
         if length > 150:
             length = 150
-        sent_lens.append(50)
+        sent_lens.append(length)
     return sent_lens
 
 

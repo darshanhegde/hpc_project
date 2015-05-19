@@ -54,7 +54,7 @@ void read_sentence_lens(const char* file_path, int* sent_lens, int n_sents){
         if (len > 150) {
             len = 150;
         }
-        sent_lens[i] = 50;
+        sent_lens[i] = len;
     }
     fclose(fp);
 }
