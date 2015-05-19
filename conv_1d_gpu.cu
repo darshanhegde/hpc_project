@@ -54,7 +54,7 @@ void read_sentence_lens(const char* file_path, int* sent_lens, int n_sents){
         if (len > 150) {
             len = 150;
         }
-        sent_lens[i] = len;
+        sent_lens[i] = 50;
     }
     fclose(fp);
 }
@@ -190,16 +190,16 @@ void conv1d_kernel(WORDVECS wordvec, KERNS kerns, OUTPUTS output){
             }
             
             // Do parallel reduction
-            for (unsigned int s=blockDim.x/2; s>0; s>>=1) {
-                if (tIdx < s) {
-                    sdata[tIdx] += sdata[tIdx + s]; }
-                    __syncthreads();
-                }
-            
-            if (tIdx == 0) {
-                out[i*kerns.num+k] = sdata[0];
-            }
-//            atomicAdd(&out[i*kerns.num+k], sdata[tIdx]);
+//            for (unsigned int s=blockDim.x/2; s>0; s>>=1) {
+//                if (tIdx < s) {
+//                    sdata[tIdx] += sdata[tIdx + s]; }
+//                    __syncthreads();
+//                }
+//            
+//            if (tIdx == 0) {
+//                out[i*kerns.num+k] = sdata[0];
+//            }
+            atomicAdd(&out[i*kerns.num+k], sdata[tIdx]);
         }
     }
 }
